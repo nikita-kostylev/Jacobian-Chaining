@@ -6,6 +6,7 @@
 # Collect local headers
 set(_local_headers
   ${CMAKE_CURRENT_SOURCE_DIR}/branch_and_bound.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/branch_and_bound_gpu.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/priority_list.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/scheduler.hpp)
 

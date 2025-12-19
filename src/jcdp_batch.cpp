@@ -20,6 +20,7 @@
 #include "jcdp/optimizer/branch_and_bound.hpp"
 #include "jcdp/optimizer/dynamic_programming.hpp"
 #include "jcdp/scheduler/branch_and_bound.hpp"
+#include "jcdp/scheduler/branch_and_bound_gpu.hpp"
 #include "jcdp/scheduler/priority_list.hpp"
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> APPLICATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< //
@@ -31,6 +32,9 @@ int main(int argc, char* argv[]) {
 
    std::shared_ptr<jcdp::scheduler::BranchAndBoundScheduler> bnb_scheduler =
         std::make_shared<jcdp::scheduler::BranchAndBoundScheduler>();
+      std::shared_ptr<jcdp::scheduler::BranchAndBoundSchedulerGPU>
+         bnb_scheduler_gpu =
+            std::make_shared<jcdp::scheduler::BranchAndBoundSchedulerGPU>();
    std::shared_ptr<jcdp::scheduler::PriorityListScheduler> list_scheduler =
         std::make_shared<jcdp::scheduler::PriorityListScheduler>();
 
@@ -71,6 +75,8 @@ int main(int argc, char* argv[]) {
       for (std::size_t t = 1; t <= len; ++t) {
          std::print(out, "BnB_BnB/{}/finished,", t);
          std::print(out, "BnB_BnB/{},", t);
+         std::print(out, "BnB_BnB_GPU/{}/finished,", t);
+         std::print(out, "BnB_BnB_GPU/{},", t);
          std::print(out, "BnB_List/{},", t);
          std::print(out, "DP/{},", t);
          std::print(out, "DP_BnB/{}{}", t, (t < len) ? "," : "\n");
@@ -102,12 +108,23 @@ int main(int argc, char* argv[]) {
             bnb_solver.set_upper_bound(bnb_seq_list.makespan());
             bnb_solver.m_usable_threads = t;
             jcdp::Sequence bnb_seq = bnb_solver.solve();
+            const bool finished_bnb = bnb_solver.finished_in_time();
 
-            std::print(out, "{},", bnb_solver.finished_in_time());
+            // Solve via branch & bound + branch & bound GPU scheduling
+            bnb_solver.init(chain, bnb_scheduler_gpu);
+            bnb_solver.set_upper_bound(bnb_seq_list.makespan());
+            bnb_solver.m_usable_threads = t;
+            jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
+            const bool finished_bnb_gpu = bnb_solver.finished_in_time();
+
+            std::print(out, "{},", finished_bnb);
             std::print(out, "{},", bnb_seq.makespan());
+            std::print(out, "{},", finished_bnb_gpu);
+            std::print(out, "{},", bnb_seq_gpu.makespan());
             std::print(out, "{},", bnb_seq_list.makespan());
             std::print(out, "{},", dp_makespan);
-            std::print(out, "{}{}", dp_seq.makespan(), (t < len) ? "," : "\n");
+            std::print(out, "{}{}", dp_seq.makespan(),
+                       (t < len) ? "," : "\n");
          }
 
          out.flush();

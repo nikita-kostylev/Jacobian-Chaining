@@ -20,6 +20,7 @@
 #include "jcdp/optimizer/branch_and_bound.hpp"
 #include "jcdp/optimizer/dynamic_programming.hpp"
 #include "jcdp/scheduler/branch_and_bound.hpp"
+#include "jcdp/scheduler/branch_and_bound_gpu.hpp"
 #include "jcdp/scheduler/priority_list.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/dot_writer.hpp"
@@ -33,6 +34,9 @@ int main(int argc, char* argv[]) {
 
    std::shared_ptr<jcdp::scheduler::BranchAndBoundScheduler> bnb_scheduler =
         std::make_shared<jcdp::scheduler::BranchAndBoundScheduler>();
+   std::shared_ptr<jcdp::scheduler::BranchAndBoundSchedulerGPU>
+        bnb_scheduler_gpu =
+             std::make_shared<jcdp::scheduler::BranchAndBoundSchedulerGPU>();
    std::shared_ptr<jcdp::scheduler::PriorityListScheduler> list_scheduler =
         std::make_shared<jcdp::scheduler::PriorityListScheduler>();
 
@@ -69,6 +73,8 @@ int main(int argc, char* argv[]) {
    std::println(
         "Adjoint cost: {}",
         chain.get_jacobian(chain.length() - 1, 0).fma<jcdp::Mode::ADJOINT>());
+
+   if(false) {
 
    // Solve via dynamic programming
    dp_solver.init(chain);
@@ -133,6 +139,27 @@ int main(int argc, char* argv[]) {
    std::println("{}", bnb_seq);
 
    jcdp::util::write_dot(bnb_seq, "branch_and_bound");
+
+   }
+
+   // Solve via branch & bound (GPU scheduler)
+   bnb_solver.init(chain, bnb_scheduler_gpu);
+   jcdp::Sequence bnb_seq_list = bnb_solver.solve(); // temporary during dev
+   bnb_solver.set_upper_bound(bnb_seq_list.makespan());
+   auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
+   jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
+   auto end_bnb_gpu = std::chrono::high_resolution_clock::now();
+   std::chrono::duration<double> duration_bnb_gpu = end_bnb_gpu -
+                                                    start_bnb_gpu;
+   std::println(
+        "\nBnB (GPU sched) solve duration: {} seconds",
+        duration_bnb_gpu.count());
+   bnb_solver.print_stats();
+   std::println(
+        "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
+   std::println("{}", bnb_seq_gpu);
+
+   jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
 
    return 0;
 }
