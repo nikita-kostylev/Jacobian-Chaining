@@ -134,5 +134,19 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(bnb_seq, "branch_and_bound");
 
+   // Solve via branch & bound bis
+   bnb_solver.init(chain, bnb_scheduler);
+   bnb_solver.set_upper_bound(bnb_seq_list.makespan());
+   auto start_bnb_bis = std::chrono::high_resolution_clock::now();
+   jcdp::Sequence bnb_seq_bis = bnb_solver.solve_bis();
+   auto end_bnb_bis = std::chrono::high_resolution_clock::now();
+   std::chrono::duration<double> duration_bnb_bis = end_bnb_bis - start_bnb_bis;
+   std::println("\nBnB (bis) solve duration: {} seconds", duration_bnb_bis.count());
+   bnb_solver.print_stats();
+   std::println("Optimized cost (BnB): {}\n", bnb_seq_bis.makespan());
+   std::println("{}", bnb_seq_bis);
+
+   jcdp::util::write_dot(bnb_seq_bis, "branch_and_bound");
+
    return 0;
 }

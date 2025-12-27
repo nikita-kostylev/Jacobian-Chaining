@@ -81,6 +81,23 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       return m_optimal_sequence;
    }
 
+   virtual auto solve_bis() -> Sequence final {
+      set_timer(m_time_to_solve);
+      start_timer();
+      std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
+
+#pragma omp parallel default(shared)
+#pragma omp single
+      while (++accs <= m_length) {
+         Sequence sequence {};
+         std::vector<OpPair> eliminations {};
+         JacobianChain chain = m_chain;
+         add_accumulation(sequence, chain, accs, eliminations);
+      }
+      schedule_all();
+      return m_optimal_sequence;
+   }
+
    inline auto set_upper_bound(const std::size_t upper_bound) {
       m_upper_bound = upper_bound;
    }
@@ -107,6 +124,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
    std::vector<std::size_t> m_pruned_branches {};
    std::size_t m_updated_makespan {0};
    std::shared_ptr<scheduler::Scheduler> m_scheduler;
+   std::vector<Sequence> sequences;
 
    using Optimizer::init;
 
@@ -225,6 +243,64 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       }
    }
 
+   inline auto add_elimination_bis(
+        Sequence& sequence, JacobianChain& chain,
+        std::vector<OpPair>& eliminations, std::size_t elim_idx = 0) -> void {
+
+      // Return if time's up
+      if (!remaining_time()) {
+         return;
+      }
+
+      // Check if we accumulated the entire jacobian
+      if (chain.get_jacobian(chain.length() - 1, 0).is_accumulated) {
+         assert(elim_idx == eliminations.size() - 1);
+         assert(!eliminations[elim_idx][0].has_value());
+         assert(!eliminations[elim_idx][1].has_value());
+
+#pragma omp critical
+         sequences.push_back(sequence);
+         // Start new task for the scheduling of the final sequence. If
+         // branch & bound is used as the scheduling algorithm, this can take
+         // some time.
+         return;
+      }
+
+      // Check critical path as lower bound
+      const std::size_t lower_bound = sequence.critical_path();
+      if (lower_bound >= m_makespan || lower_bound > m_upper_bound) {
+         std::size_t& prune_counter = m_pruned_branches[sequence.length()];
+
+         #pragma omp atomic
+         prune_counter++;
+
+         return;
+      }
+
+      // Perform all possible elimination from the current elim_idx
+      for (; elim_idx < eliminations.size(); ++elim_idx) {
+         for (std::size_t pair_idx = 0; pair_idx <= 1; ++pair_idx) {
+            if (!eliminations[elim_idx][pair_idx].has_value()) {
+               continue;
+            }
+
+            const Operation op = eliminations[elim_idx][pair_idx].value();
+            if (!chain.apply(op)) {
+               continue;
+            }
+
+            push_possible_eliminations(chain, eliminations, op.j, op.i);
+            sequence.push_back(op);
+
+            add_elimination(sequence, chain, eliminations, elim_idx + 1);
+
+            sequence.pop_back();
+            eliminations.pop_back();
+            chain.revert(op);
+         }
+      }
+   }
+
    inline auto cheapest_accumulation(const std::size_t j) -> Operation {
       const Jacobian& jac = m_chain.get_jacobian(j, j);
       Operation op {
@@ -244,6 +320,33 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       }
 
       return op;
+   }
+
+   inline auto schedule_all() -> void {
+      std::println("Sequences: {}\n", sequences.size());
+
+#pragma omp parallel for private(m_scheduler)
+      for (int i = 0; i < sequences.size(); i++) {
+         const double time_to_schedule = remaining_time();
+         if (time_to_schedule) {
+            m_scheduler->set_timer(time_to_schedule);
+
+            const std::size_t new_makespan = m_scheduler->schedule(
+                 sequences[i], m_usable_threads, m_makespan);
+
+            m_timer_expired |= !m_scheduler->finished_in_time();
+
+#pragma omp atomic
+            m_leafs++;
+
+#pragma omp critical
+            if (m_makespan > new_makespan) {
+               m_optimal_sequence = sequences[i];
+               m_makespan = new_makespan;
+               m_updated_makespan++;
+            }
+         }
+      }
    }
 
    inline auto push_possible_eliminations(
