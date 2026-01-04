@@ -5,4 +5,4 @@ available_threads 4
 available_memory 0
 matrix_free 1
 time_to_solve 60
-seed 1939774741
+seed 1939774743
