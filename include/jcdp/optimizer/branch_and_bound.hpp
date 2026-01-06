@@ -92,7 +92,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
          JacobianChain chain = m_chain;
-         add_accumulation(sequence, chain, accs, eliminations);
+         add_accumulation_bis(sequence, chain, accs, eliminations);
       }
       schedule_all();
       return m_optimal_sequence;
@@ -156,6 +156,37 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          #pragma omp task default(none) firstprivate(task_sequence)            \
                           firstprivate(task_chain, task_eliminations)
          add_elimination(task_sequence, task_chain, task_eliminations);
+      }
+   }
+
+   inline auto add_accumulation_bis(
+        Sequence& sequence, JacobianChain& chain, const std::size_t accs,
+        std::vector<OpPair>& eliminations, std::size_t j = 0) -> void {
+      if (accs > 0) {
+         for (; j < m_chain.length(); ++j) {
+            const Operation op = cheapest_accumulation(j);
+            if (!chain.apply(op)) {
+               continue;
+            }
+
+            push_possible_eliminations(chain, eliminations, op.j, op.i);
+            sequence.push_back(std::move(op));
+
+            add_accumulation_bis(sequence, chain, accs - 1, eliminations, j + 1);
+
+            sequence.pop_back();
+            eliminations.pop_back();
+            chain.revert(op);
+         }
+      } else {
+         // Copies for spawned task (Necessary on Windows)
+         Sequence task_sequence = sequence;
+         JacobianChain task_chain = chain;
+         std::vector<OpPair> task_eliminations = eliminations;
+
+#pragma omp task default(none) firstprivate(task_sequence)            \
+firstprivate(task_chain, task_eliminations)
+         add_elimination_bis(task_sequence, task_chain, task_eliminations);
       }
    }
 
@@ -292,7 +323,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
             push_possible_eliminations(chain, eliminations, op.j, op.i);
             sequence.push_back(op);
 
-            add_elimination(sequence, chain, eliminations, elim_idx + 1);
+            add_elimination_bis(sequence, chain, eliminations, elim_idx + 1);
 
             sequence.pop_back();
             eliminations.pop_back();
@@ -324,8 +355,9 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
    inline auto schedule_all() -> void {
       std::println("Sequences: {}\n", sequences.size());
+      m_leafs += sequences.size();
 
-#pragma omp parallel for private(m_scheduler)
+      #pragma omp parallel for //firstprivate(m_scheduler)
       for (int i = 0; i < sequences.size(); i++) {
          const double time_to_schedule = remaining_time();
          if (time_to_schedule) {
@@ -336,10 +368,9 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
             m_timer_expired |= !m_scheduler->finished_in_time();
 
-#pragma omp atomic
-            m_leafs++;
-
-#pragma omp critical
+            //#pragma omp atomic
+            //m_leafs++;
+            #pragma omp critical
             if (m_makespan > new_makespan) {
                m_optimal_sequence = sequences[i];
                m_makespan = new_makespan;
