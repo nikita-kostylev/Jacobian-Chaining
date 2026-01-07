@@ -39,6 +39,8 @@ struct Layer{
   time_t load_on_thread  = 0;
   time_t idletime  = 0;
   size_t makespan = 0;
+
+  std::vector<size_t> thread_loads_full;
 };
 
 class BranchAndBoundSchedulerGPU : public Scheduler {
@@ -216,7 +218,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          std::size_t op_idx = 0;
          std::size_t thread_idx = 0;
          std::size_t depth = 0;
-         std::size_t old_thread_load = 0;
+         //std::size_t old_thread_load = 0;
 
          for(std::size_t op_idx_temp = 0; op_idx_temp < sequence.length(); ++op_idx_temp){
             if (working_copy[op_idx_temp].is_scheduled) {
@@ -234,15 +236,35 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          initial_layer.load_on_thread = thread_loads[0];
          initial_layer.makespan = makespan;
          initial_layer.idletime = idling_time;
+         initial_layer.thread_loads_full = thread_loads;
          progress_stack.push(initial_layer);
+
+         //check whether optimal tree?
+         std::vector<Mode> modes_in_sequence = {Mode::TANGENT,Mode::TANGENT,Mode::ADJOINT,Mode::ADJOINT,Mode::TANGENT,Mode::TANGENT,Mode::ADJOINT,Mode::ADJOINT,Mode::TANGENT,Mode::TANGENT,Mode::NONE,Mode::TANGENT,Mode::TANGENT,Mode::ADJOINT,Mode::TANGENT,Mode::TANGENT,Mode::ADJOINT,Mode::NONE,Mode::NONE,Mode::NONE};
+         std::vector<Action> actions_in_sequence = {Action::ACCUMULATION,Action::ACCUMULATION,Action::ACCUMULATION,Action::ACCUMULATION,Action::ACCUMULATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::MULTIPLICATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::MULTIPLICATION,Action::MULTIPLICATION,Action::MULTIPLICATION};
+
+         bool optimal_tree = true;
+         for (size_t i = 0; i < sequence.length(); i++){
+            if(sequence[i].mode!=modes_in_sequence[i] || sequence[i].action!=actions_in_sequence[i]){
+               optimal_tree = false;
+               break;            
+            }
+         }
+
+         
 
 
          while(remaining_time() > 0.0){  //And some other metric when tree finished
 
+            
+
+
+
             skip_changes = false;
 
-            //std::println("SKIPPED;  At depth {}, op idx {}, thread idx {}, with opx.isScheduled {}", depth, op_idx, thread_idx,working_copy[op_idx].is_scheduled);
-
+            if(optimal_tree && depth == 8 && false){
+               std::println("SKIPPED;  At depth {}, op idx {}, thread idx {}, with opx.isScheduled {}", depth, op_idx, thread_idx,working_copy[op_idx].is_scheduled);
+            }
             //Skip already scheduled or unschedulable ops, revert if at end
             if (working_copy[op_idx].is_scheduled or !working_copy.is_schedulable(op_idx)) {
                op_idx++;
@@ -254,12 +276,12 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                }
             }
 
-            std::println("Depth: {}, Op idx: {}, Thread idx: {}, Best makespan: {}, Current makespan: {}", depth, op_idx, thread_idx, best_makespan, makespan);
-
-
-            //Calculate current value changes
+            if(optimal_tree && depth == 8){
+               ////std::println("Depth: {}, Op idx: {}, Thread idx: {}, Best makespan: {}, Current makespan: {}", depth, op_idx, thread_idx, best_makespan, makespan);
+            }
+               //Calculate current value changes
             if(!skip_changes){
-               old_thread_load = thread_loads[thread_idx];
+               //old_thread_load = thread_loads[thread_idx];
                working_copy[op_idx].is_scheduled = true;
                const std::size_t start_time = std::max(thread_loads[thread_idx], working_copy.earliest_start(op_idx));
                working_copy[op_idx].start_time = start_time;
@@ -274,7 +296,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
 
             //If finished schedule, save if best yet and revert to previous state
             if (depth >= sequence.length() - 1) {
-               std::println("Finished a schedule with makespan {}", makespan);
+               ////std::println("Finished a schedule with makespan {}", makespan);
                if (makespan < best_makespan) {
                   best_makespan = makespan;
                   for (size_t i = 0; i < sequence.length(); ++i) {
@@ -288,7 +310,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
 
             //If lowed bound still good, go deeper, else revert
             const std::size_t lb = std::max(((idling_time + sequential_makespan) / usable_threads),working_copy.critical_path());
-            std::println("Idle time{}", idling_time);
+            ////std::println("  LB: {}, critpath   {}", lb, working_copy.critical_path());
             if (std::max(lb, makespan) < best_makespan) {
                working_copy[op_idx].thread = thread_idx;
                Layer current_layer;
@@ -296,14 +318,17 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                current_layer.thread_idx = thread_idx;
                current_layer.depth = depth++;
                current_layer.start_time_op = working_copy[op_idx].start_time;
-               current_layer.load_on_thread = thread_loads[thread_idx];
+               //current_layer.load_on_thread = thread_loads[thread_idx];
                current_layer.makespan = makespan;
                current_layer.idletime = idling_time;
+               current_layer.thread_loads_full = thread_loads;   //full array restore
                progress_stack.push(current_layer);
                op_idx=0;
                thread_idx=0; 
             }else{
-               std::println("Pruning");
+               if(optimal_tree && depth == 10){
+                  std::println("Pruned");
+               }
                revert_thread_idx = true;
             }
 
@@ -314,8 +339,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
 
                working_copy[op_idx].is_scheduled = false;
                working_copy[op_idx].start_time = previous_state.start_time_op;
-               std::println("threadload before {} and after {} and old {}", thread_loads[thread_idx], previous_state.load_on_thread, old_thread_load);
-               thread_loads[thread_idx] = old_thread_load;
+               //thread_loads[thread_idx] = old_thread_load;
                makespan = previous_state.makespan;
                idling_time = previous_state.idletime;
 
@@ -323,12 +347,10 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                if(thread_idx >= usable_threads){
                   revert_op_idx = true;
                }
-               std::println("new thread idx: {},new opidx: {}",thread_idx, op_idx);
-               for (size_t i = 0; i < usable_threads; i++)
-               {
-                  std::println("thread load {}: {}", i, thread_loads[i]);
+               thread_loads = previous_state.thread_loads_full; //full array restore
+               if(optimal_tree && depth == 8){
+                  ////std::println("threadload {} ", thread_loads);
                }
-               
             }
 
             if(revert_op_idx){
@@ -339,13 +361,18 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                depth--;
                Layer previous_state = progress_stack.top();
                progress_stack.pop();
-               op_idx = previous_state.op_idx ;  // mabye +1? im not sure
+               working_copy[op_idx].start_time = 0;
+               op_idx = previous_state.op_idx;  // mabye +1? im not sure
                working_copy[op_idx].is_scheduled = false;
                thread_idx = 0;
-               working_copy[op_idx].start_time = previous_state.start_time_op;
-               thread_loads[thread_idx] = previous_state.load_on_thread;
+               //working_copy[op_idx].start_time = previous_state.start_time_op;   probably useless
+               //thread_loads[thread_idx] = previous_state.load_on_thread;
                makespan = previous_state.makespan;
                idling_time = previous_state.idletime;
+               thread_loads = progress_stack.top().thread_loads_full;  //full array restore
+               if(op_idx >= sequence.length()){
+                  std::println("reached max opidx");
+               }
             }
          }
          return false;

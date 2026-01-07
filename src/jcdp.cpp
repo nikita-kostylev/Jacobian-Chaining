@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(dp_seq, "dynamic_programming");
 
-   if(false) {
+   if(true) {
 
    // Schedule dynamic programming sequence via list scheduling
    auto start_list_sched = std::chrono::high_resolution_clock::now();
