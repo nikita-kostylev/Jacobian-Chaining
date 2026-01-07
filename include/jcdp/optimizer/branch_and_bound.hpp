@@ -86,8 +86,8 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       start_timer();
       std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
 
-#pragma omp parallel default(shared)
-#pragma omp single
+      #pragma omp parallel default(shared)
+      #pragma omp single
       while (++accs <= m_length) {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
@@ -184,8 +184,8 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          JacobianChain task_chain = chain;
          std::vector<OpPair> task_eliminations = eliminations;
 
-#pragma omp task default(none) firstprivate(task_sequence)            \
-firstprivate(task_chain, task_eliminations)
+         #pragma omp task default(none) firstprivate(task_sequence)            \
+         firstprivate(task_chain, task_eliminations)
          add_elimination_bis(task_sequence, task_chain, task_eliminations);
       }
    }
@@ -289,7 +289,7 @@ firstprivate(task_chain, task_eliminations)
          assert(!eliminations[elim_idx][0].has_value());
          assert(!eliminations[elim_idx][1].has_value());
 
-#pragma omp critical
+         #pragma omp critical
          sequences.push_back(sequence);
          // Start new task for the scheduling of the final sequence. If
          // branch & bound is used as the scheduling algorithm, this can take
@@ -354,10 +354,9 @@ firstprivate(task_chain, task_eliminations)
    }
 
    inline auto schedule_all() -> void {
-      std::println("Sequences: {}\n", sequences.size());
-      m_leafs += sequences.size();
+      std::println("To schedule: {}", sequences.size());
 
-      #pragma omp parallel for //firstprivate(m_scheduler)
+      #pragma omp parallel for firstprivate(m_scheduler)
       for (int i = 0; i < sequences.size(); i++) {
          const double time_to_schedule = remaining_time();
          if (time_to_schedule) {
@@ -368,8 +367,9 @@ firstprivate(task_chain, task_eliminations)
 
             m_timer_expired |= !m_scheduler->finished_in_time();
 
-            //#pragma omp atomic
-            //m_leafs++;
+            #pragma omp atomic
+            m_leafs++;
+
             #pragma omp critical
             if (m_makespan > new_makespan) {
                m_optimal_sequence = sequences[i];
