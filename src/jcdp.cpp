@@ -24,9 +24,14 @@
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/dot_writer.hpp"
 
+#include "omp.h"
+
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> APPLICATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< //
 
 int main(int argc, char* argv[]) {
+   std::println("Devices: {}", omp_get_num_devices());
+   std::println("Threads: {}", omp_get_max_threads());
+
    jcdp::JacobianChainGenerator jcgen;
    jcdp::optimizer::DynamicProgrammingOptimizer dp_solver;
    jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;

@@ -30,6 +30,8 @@
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
 
+#include "omp.h"
+
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>> HEADER CONTENTS <<<<<<<<<<<<<<<<<<<<<<<<<<<< //
 
 namespace jcdp::optimizer {
@@ -357,7 +359,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       std::println("To schedule: {}", sequences.size());
 
       #pragma omp parallel for firstprivate(m_scheduler)
-      for (int i = 0; i < sequences.size(); i++) {
+      for (std::size_t i = 0; i < sequences.size(); i++) {
          const double time_to_schedule = remaining_time();
          if (time_to_schedule) {
             m_scheduler->set_timer(time_to_schedule);
