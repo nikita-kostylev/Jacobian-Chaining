@@ -6,8 +6,8 @@
  *        brackating (elimination sequence) for a given Jacobian chain.
  ******************************************************************************/
 
-#ifndef JCDP_OPTIMIZER_BRANCH_AND_BOUND_HPP_
-#define JCDP_OPTIMIZER_BRANCH_AND_BOUND_HPP_
+#ifndef JCDP_OPTIMIZER_BRANCH_AND_BOUND_BLOCK_HPP_
+#define JCDP_OPTIMIZER_BRANCH_AND_BOUND_BLOCK_HPP_
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> INCLUDES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< //
 
@@ -27,7 +27,7 @@
 #include "jcdp/operation.hpp"
 #include "jcdp/optimizer/optimizer.hpp"
 #include "jcdp/scheduler/scheduler.hpp"
-#include "jcdp/scheduler/branch_and_bound.hpp"
+#include "jcdp/scheduler/bnb_block.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
 
@@ -37,21 +37,21 @@
 
 namespace jcdp::optimizer {
 
-class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
+class BnBBlockOptimizer : public Optimizer, public util::Timer {
    using OpPair = std::array<std::optional<Operation>, 2>;
 
  public:
-   BranchAndBoundOptimizer() : Optimizer() {
+   BnBBlockOptimizer() : Optimizer() {
       register_property(
            m_time_to_solve, "time_to_solve",
            "Maximal runtime for the branch & bound solver in seconds.");
    }
 
-   virtual ~BranchAndBoundOptimizer() = default;
+   virtual ~BnBBlockOptimizer() = default;
 
    auto init(
         const JacobianChain& chain,
-        scheduler::Scheduler* sched) -> void {
+        scheduler::BnBBlockScheduler* sched) -> void {
       Optimizer::init(chain);
 
       m_scheduler = sched;
@@ -67,7 +67,6 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
    }
 
    virtual auto solve() -> Sequence override final {
-
       set_timer(m_time_to_solve);
       start_timer();
       std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
@@ -80,7 +79,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          JacobianChain chain = m_chain;
          add_accumulation(sequence, chain, accs, eliminations);
       }
-
+      schedule_all();
       return m_optimal_sequence;
    }
 
@@ -109,7 +108,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
    std::size_t m_leafs {0};
    std::vector<std::size_t> m_pruned_branches {};
    std::size_t m_updated_makespan {0};
-   scheduler::Scheduler* m_scheduler;
+   scheduler::BnBBlockScheduler* m_scheduler;
    std::vector<Sequence> sequences;
 
    using Optimizer::init;
@@ -140,7 +139,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          std::vector<OpPair> task_eliminations = eliminations;
 
          #pragma omp task default(none) firstprivate(task_sequence)            \
-                          firstprivate(task_chain, task_eliminations)
+         firstprivate(task_chain, task_eliminations)
          add_elimination(task_sequence, task_chain, task_eliminations);
       }
    }
@@ -160,37 +159,11 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          assert(!eliminations[elim_idx][0].has_value());
          assert(!eliminations[elim_idx][1].has_value());
 
+         #pragma omp critical
+         sequences.push_back(sequence);
          // Start new task for the scheduling of the final sequence. If
          // branch & bound is used as the scheduling algorithm, this can take
          // some time.
-
-         // Copies for spawned task (Necessary on Windows)
-         Sequence final_sequence = sequence;
-         scheduler::Scheduler* scheduler = m_scheduler;
-
-         #pragma omp task default(shared) \
-                          firstprivate(final_sequence, scheduler)
-         {
-            const double time_to_schedule = remaining_time();
-            if (time_to_schedule) {
-               scheduler->set_timer(time_to_schedule);
-
-               const std::size_t new_makespan = scheduler->schedule(
-                    final_sequence, m_usable_threads, m_makespan);
-
-               m_timer_expired |= !scheduler->finished_in_time();
-
-               #pragma omp atomic
-               m_leafs++;
-
-               #pragma omp critical
-               if (m_makespan > new_makespan) {
-                  m_optimal_sequence = final_sequence;
-                  m_makespan = new_makespan;
-                  m_updated_makespan++;
-               }
-            }
-         }
          return;
       }
 
@@ -248,6 +221,47 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       }
 
       return op;
+   }
+
+   inline auto schedule_all() -> void {
+      std::println("To schedule: {}", sequences.size());
+
+      // Cannot map std::vector
+      Sequence *seqs = &sequences[0];
+      std::size_t n = sequences.size();
+
+      // need to map raw pointer
+      scheduler::BnBBlockScheduler* scheduler = &m_scheduler[0];
+
+      #pragma omp target data map(to:seqs[:n]) map(to:scheduler)
+      #pragma omp target parallel for firstprivate(scheduler)
+      for (std::size_t i = 0; i < n; i++) {
+         // Problem with clock on gpu
+         //const double time_to_schedule = remaining_time();
+         const double time_to_schedule = 10;
+
+         if (time_to_schedule) {
+            //scheduler->set_timer(time_to_schedule);
+
+            const std::size_t new_makespan = scheduler->schedule(
+                 seqs[i], m_usable_threads, m_makespan);
+
+            //m_timer_expired |= !scheduler->finished_in_time();
+
+            #pragma omp atomic
+            m_leafs++;
+
+            // No critical with gpu
+            //#pragma omp critical
+            /*
+            if (m_makespan > new_makespan) {
+               m_optimal_sequence = seqs[i];
+               m_makespan = new_makespan;
+               m_updated_makespan++;
+            }
+            */
+         }
+      }
    }
 
    inline auto push_possible_eliminations(
@@ -341,4 +355,4 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
 }  // namespace jcdp::optimizer
 
-#endif  // JCDP_OPTIMIZER_BRANCH_AND_BOUND_HPP_
+#endif  // JCDP_OPTIMIZER_BRANCH_AND_BOUND_BLOCK_HPP_
