@@ -64,6 +64,7 @@ int main(int argc, char* argv[]) {
    try {
       dp_solver.parse_config(config_filename, true);
       bnb_solver.parse_config(config_filename, true);
+      bnb_block_solver.parse_config(config_filename, true);
       jcgen.parse_config(config_filename, true);
       jcgen.init_rng();
    } catch (const std::runtime_error& bcfe) {
@@ -157,7 +158,7 @@ int main(int argc, char* argv[]) {
    bnb_block_solver.init(chain, bnb_b_s_p);
    bnb_block_solver.set_upper_bound(bnb_seq_list.makespan());
    auto start_bnb_block = std::chrono::high_resolution_clock::now();
-   jcdp::Sequence bnb_seq_block = bnb_solver.solve();
+   jcdp::Sequence bnb_seq_block = bnb_block_solver.solve();
    auto end_bnb_block = std::chrono::high_resolution_clock::now();
    std::chrono::duration<double> duration_bnb_block = end_bnb_block - start_bnb_block;
    std::println("\nBnB (bis) solve duration: {} seconds", duration_bnb_block.count());
