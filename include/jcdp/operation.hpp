@@ -45,32 +45,38 @@ struct Operation {
    bool is_scheduled {false};
 };
 
-inline auto operator<=>(const Operation& lhs, const Operation& rhs)
-     -> std::partial_ordering {
+inline auto operator>(const Operation& lhs, const Operation& rhs) {
    assert(lhs.action != Action::NONE);
    assert(rhs.action != Action::NONE);
-
-   if (lhs.i == rhs.i && lhs.j == rhs.j) {
-      return std::partial_ordering::equivalent;
-   }
-
-   if (lhs.action != Action::ACCUMULATION) {
-      if ((lhs.i == rhs.i && lhs.k == rhs.j) ||
-          (lhs.j == rhs.j && lhs.k + 1 == rhs.i)) {
-         return std::partial_ordering::less;
-      }
-   }
-
    if (rhs.action != Action::ACCUMULATION) {
       if ((rhs.i == lhs.i && rhs.k == lhs.j) ||
           (rhs.j == lhs.j && rhs.k + 1 == lhs.i)) {
-         return std::partial_ordering::greater;
-      }
+         return true;
+          }
    }
-
-   return std::partial_ordering::unordered;
+   return false;
 }
 
+inline auto operator<(const Operation& lhs, const Operation& rhs) {
+   assert(lhs.action != Action::NONE);
+   assert(rhs.action != Action::NONE);
+   if (lhs.action != Action::ACCUMULATION) {
+      if ((lhs.i == rhs.i && lhs.k == rhs.j) ||
+          (lhs.j == rhs.j && lhs.k + 1 == rhs.i)) {
+         return true;
+          }
+   }
+   return false;
+}
+
+inline auto operator==(const Operation& lhs, const Operation& rhs) {
+   assert(lhs.action != Action::NONE);
+   assert(rhs.action != Action::NONE);
+   if (lhs.i == rhs.i && lhs.j == rhs.j) {
+      return true;
+   }
+   return false;
+}
 }  // end namespace jcdp
 
 template<>

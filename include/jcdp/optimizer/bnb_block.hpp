@@ -79,7 +79,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          JacobianChain chain = m_chain;
          add_accumulation(sequence, chain, accs, eliminations);
       }
-      schedule_all();
+      schedule_all_late();
       return m_optimal_sequence;
    }
 
@@ -223,6 +223,13 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       return op;
    }
 
+   inline auto schedule_all_late() -> void {
+      std::println("To schedule: {}", sequences.size());
+
+      int index = m_scheduler->schedule_gpu(sequences, m_usable_threads, m_makespan);
+      m_optimal_sequence = sequences[index];
+      m_makespan = m_optimal_sequence.makespan();
+   }
    inline auto schedule_all() -> void {
       std::println("To schedule: {}", sequences.size());
 
@@ -233,12 +240,13 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       // need to map raw pointer
       scheduler::BnBBlockScheduler* scheduler = &m_scheduler[0];
 
-      #pragma omp target data map(to:seqs[:n]) map(to:scheduler)
-      #pragma omp target parallel for firstprivate(scheduler)
+      //#pragma omp target data map(to:seqs[:n]) map(to:scheduler)
+      //#pragma omp target parallel for firstprivate(scheduler)
+      #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
-         //const double time_to_schedule = remaining_time();
-         const double time_to_schedule = 10;
+         const double time_to_schedule = remaining_time();
+         //const double time_to_schedule = 10;
 
          if (time_to_schedule) {
             //scheduler->set_timer(time_to_schedule);
@@ -252,14 +260,13 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
             m_leafs++;
 
             // No critical with gpu
-            //#pragma omp critical
-            /*
+            #pragma omp critical
+
             if (m_makespan > new_makespan) {
                m_optimal_sequence = seqs[i];
                m_makespan = new_makespan;
                m_updated_makespan++;
             }
-            */
          }
       }
    }
