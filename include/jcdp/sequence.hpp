@@ -112,8 +112,8 @@ class Sequence : public std::deque<Operation> {
 
    inline auto is_schedulable(const std::size_t op_idx) const -> bool {
       for (std::size_t i = 0; i < size(); i++) {
-         if (at(op_idx) < at(i)) {
-            if (!at(i).is_scheduled) {
+         if (this[0][op_idx] < this[0][i]) {
+            if (!this[0][i].is_scheduled) {
                return false;
             }
          }
@@ -142,8 +142,8 @@ class Sequence : public std::deque<Operation> {
       std::size_t time = 0;
       std::size_t max = 0;
       for (std::size_t i = 0; i < size(); i++) {
-         if (at(op_idx) < at(i)) {
-            time = at(i).start_time + at(i).fma;
+         if (this[0][op_idx] < this[0][i]) {
+            time = this[0][i].start_time + this[0][i].fma;
          }
          if (time > max ) {
             max = time;
