@@ -38,22 +38,20 @@ class BnBBlockScheduler {//: public util::Timer{
       std::vector<std::size_t> vec_sequential_makespan(sequences.size());
       std::vector<Sequence> vec_working_copy(sequences.size());
       std::vector<std::size_t> vec_best_makespan(sequences.size());
-      std::vector<std::size_t> vec_thread_loads(sequences.size());
+      std::vector<std::size_t> vec_thread_loads(threads);
       std::vector<std::size_t> vec_lower_bound(sequences.size());
       std::vector<std::size_t> results(sequences.size());
       std::size_t n = sequences.size();
-      
+
       //#pragma omp target
       //#pragma omp parallel for
-      for (int i = 0; i < n; i++) {
-	       //std::size_t usable_threads = 3;
+      for (std::size_t i = 0; i < n; i++) {
 	       std::size_t usable_threads = sequences[i].count_accumulations();
          if (threads > 0 && threads < usable_threads) {
             usable_threads = threads;
          }
          vec_usable_threads[i] = usable_threads;
-         vec_sequential_makespan[i] = 2;
-	       //vec_sequential_makespan[i] = sequences[i].sequential_makespan();
+	       vec_sequential_makespan[i] = sequences[i].sequential_makespan();
          vec_working_copy[i] = sequences[i];
          vec_best_makespan[i] = upper_bound;
          //vec_thread_loads[i] = std::vector<std::size_t>(usable_threads, 0);
@@ -70,30 +68,28 @@ class BnBBlockScheduler {//: public util::Timer{
       std::size_t* sms = &vec_sequential_makespan[0];
       Sequence* wc = &vec_working_copy[0];
       std::size_t* bms = &vec_best_makespan[0];
-      std::size_t* lb = &vec_lower_bound[0];
+      std::size_t* lbs = &vec_lower_bound[0];
       std::size_t* r = &results[0];
-      std::size_t* tl = &vec_thread_loads[0]; 
+      std::size_t* tl = &vec_thread_loads[0];
       
-      #pragma omp target data map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lb[:n]) 
-      #pragma omp target data map(r[:n], tl)
-      #pragma omp parallel for
-      for (int i = 0; i < n; i++) {
+      #pragma omp target data map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
+      #pragma omp target parallel for
+      for (std::size_t i = 0; i < n; i++) {
          r[i] = lambda_schedule(seqs[i], ut[i],
-            wc[i], bms[i], tl, 
-            lb[i], sms[i], upper_bound);
+            wc[i], bms[i], tl,
+            lbs[i], sms[i], upper_bound);
       }
-      /*
+
       int index = 0;
       std::size_t best = std::numeric_limits<std::size_t>::max();
-      for (int i = 0; i < sequences.size(); i++) {
-         if (results[i] < best) {
-            best = results[i];
+      for (std::size_t i = 0; i < n; i++) {
+         if (r[i] < best) {
+            best = r[i];
             index = i;
          }
       }
-      */
-      return 0;
-      //return index;
+      //return 0;
+      return index;
    }
 
    std::size_t lambda_schedule(
@@ -109,7 +105,7 @@ class BnBBlockScheduler {//: public util::Timer{
       if (lower_bound >= upper_bound) {
          return lower_bound;
       }
-      
+
      	 
       auto schedule_op = [&](auto& schedule_next_op) -> bool {
          // Problem with clock on gpu
@@ -126,11 +122,12 @@ class BnBBlockScheduler {//: public util::Timer{
             }
 	    
             everything_scheduled = false;
-	          /* Verbose here
+	          // Verbose here
+            /*
             if (!working_copy.is_schedulable(op_idx)) {
                continue;
             }
-	          */
+            */
 
             working_copy[op_idx].is_scheduled = true;
             bool tried_empty_processor = false;
@@ -160,7 +157,7 @@ class BnBBlockScheduler {//: public util::Timer{
                const std::size_t old_makespan = makespan;
                makespan = std::max(makespan, thread_loads[t]);
 	             const std::size_t lb = 0;
-	             /*
+               /*
                const std::size_t lb = std::max(
                     ((idling_time + sequential_makespan) / usable_threads),
                     working_copy.critical_path());
