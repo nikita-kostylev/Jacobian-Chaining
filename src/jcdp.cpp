@@ -144,7 +144,6 @@ int main(int argc, char* argv[]) {
 
    // Solve via branch & bound (GPU scheduler)
    bnb_solver.init(chain, bnb_scheduler_gpu);
-   bnb_solver.set_upper_bound(bnb_seq_list.makespan());
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
    jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
    auto end_bnb_gpu = std::chrono::high_resolution_clock::now();
@@ -169,7 +168,6 @@ int main(int argc, char* argv[]) {
      bnb_scheduler_gpu->set_timer(60.0);
      bnb_scheduler_gpu->start_timer();
      bnb_scheduler_gpu->schedule(dp_seq, dp_solver.m_usable_threads);
-     std::println("debugprint");
      auto end_sched = std::chrono::high_resolution_clock::now();
      std::chrono::duration<double> duration_sched = end_sched - start_sched;
      std::println("\nScheduling duration: {} seconds", duration_sched.count());
