@@ -155,6 +155,11 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          initial_layer.thread_loads_full = thread_loads;
          progress_stack.push(initial_layer);
 
+         std::vector<Mode> modes_in_sequence = {Mode::ADJOINT,Mode::TANGENT,Mode::ADJOINT,Mode::TANGENT,Mode::TANGENT,Mode::TANGENT,Mode::TANGENT,Mode::NONE,Mode::NONE,Mode::NONE};
+         std::vector<Action> actions_in_sequence = {Action::ACCUMULATION,Action::ACCUMULATION,Action::ACCUMULATION,Action::ACCUMULATION,Action::ELIMINATION,Action::ELIMINATION,Action::ELIMINATION,Action::MULTIPLICATION,Action::MULTIPLICATION,Action::MULTIPLICATION};
+
+         
+
          std::println("{}----------------------------------------------------------------------------{}",sequence.length(),usable_threads);
 
          while(remaining_time() > 0.0){
