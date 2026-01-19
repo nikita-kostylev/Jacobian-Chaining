@@ -55,18 +55,15 @@ std::size_t lambda_schedule(
             }
 
             everything_scheduled = false;
-	          // Verbose here
-            /*
+
             if (!working_copy.is_schedulable(op_idx)) {
                continue;
             }
-            */
 
             working_copy[op_idx].is_scheduled = true;
             bool tried_empty_processor = false;
-            // Verbose here
-	          //const std::size_t start = working_copy.earliest_start(op_idx);
-	          const std::size_t start = 0;
+	          const std::size_t start = working_copy.earliest_start(op_idx);
+
             for (size_t t = 0; t < usable_threads; t++) {
                // We only need to check one empty processor (w.l.o.g.)
                if (thread_loads[t] == 0) {
@@ -89,16 +86,15 @@ std::size_t lambda_schedule(
 
                const std::size_t old_makespan = makespan;
                makespan = std::max(makespan, thread_loads[t]);
-	             const std::size_t lb = 0;
-               /*
+
                const std::size_t lb = std::max(
                     ((idling_time + sequential_makespan) / usable_threads),
                     working_copy.critical_path());
-               */
 
 	             if (std::max(lb, makespan) < best_makespan) {
                   working_copy[op_idx].thread = t;
 
+	                // Problem here with recursive lambda expressions
                   // Perform branching and exit if lower bound is reached
                   if (schedule_next_op(schedule_next_op)) {
                      return true;
@@ -134,8 +130,6 @@ std::size_t lambda_schedule(
 
       schedule_op(schedule_op);
       return best_makespan;
-
-      //return 0;
    }
 
 class BnBBlockScheduler {//: public util::Timer{
@@ -185,8 +179,8 @@ class BnBBlockScheduler {//: public util::Timer{
       std::size_t* r = &results[0];
       std::size_t* tl = &vec_thread_loads[0];
       
-      #pragma omp target data map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
-      #pragma omp target parallel for
+      #pragma omp target map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
+      #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          r[i] = lambda_schedule(seqs[i], ut[i],
             wc[i], bms[i], tl,
@@ -201,7 +195,6 @@ class BnBBlockScheduler {//: public util::Timer{
             index = i;
          }
       }
-      //return 0;
       return index;
    }
 

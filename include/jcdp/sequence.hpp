@@ -74,7 +74,7 @@ class Sequence : public std::deque<Operation> {
 
       std::vector<std::size_t> child_ops;
       for (std::size_t i = 0; i < length(); ++i) {
-         if (at(i) < at(op_idx)) {
+         if (this[0][i] < this[0][op_idx]) {
             return i;
          }
       }
@@ -101,8 +101,8 @@ class Sequence : public std::deque<Operation> {
    inline auto critical_path(
         const std::size_t op_idx, std::size_t start_time = 0) const
         -> std::size_t {
-      start_time = std::max(start_time, at(op_idx).start_time);
-      const std::size_t end_time = start_time + at(op_idx).fma;
+      start_time = std::max(start_time, this[0][op_idx].start_time);
+      const std::size_t end_time = start_time + this[0][op_idx].fma;
       std::optional<std::size_t> p = parent(op_idx);
       if (p.has_value()) {
          return critical_path(p.value(), end_time);
