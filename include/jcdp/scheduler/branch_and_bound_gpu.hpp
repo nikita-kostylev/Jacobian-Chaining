@@ -124,93 +124,6 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          return true;
       };
 
-
-
-
-      
-      // --- recursion: branching/search logic starts here ---
-      auto schedule_op = [&](auto& schedule_next_op) -> bool {
-         // Return if time's up
-         if (!remaining_time()) {
-            return true;
-         }
-
-         bool everything_scheduled = true;
-         for (std::size_t op_idx = 0; op_idx < sequence.length(); ++op_idx) {
-            if (working_copy[op_idx].is_scheduled) {
-               continue;
-            }
-            everything_scheduled = false;
-
-            if (!working_copy.is_schedulable(op_idx)) {
-               continue;
-            }
-
-            working_copy[op_idx].is_scheduled = true;
-            bool tried_empty_processor = false;
-            const std::size_t start = working_copy.earliest_start(op_idx);
-
-            for (size_t t = 0; t < usable_threads; t++) {
-               // We only need to check one empty processor (w.l.o.g.)
-               if (thread_loads[t] == 0) {
-                  if (tried_empty_processor) {
-                     break;
-                  }
-                  tried_empty_processor = true;
-               }
-
-               const std::size_t old_start_time =
-                    working_copy[op_idx].start_time;
-               const std::size_t start_time = std::max(thread_loads[t], start);
-               working_copy[op_idx].start_time = start_time;
-
-               const std::size_t old_thread_load = thread_loads[t];
-               thread_loads[t] = start_time + sequence[op_idx].fma;
-
-               const std::size_t old_idling_time = idling_time;
-               idling_time += (start_time - old_thread_load);
-
-               const std::size_t old_makespan = makespan;
-               makespan = std::max(makespan, thread_loads[t]);
-
-               const std::size_t lb = std::max(
-                    ((idling_time + sequential_makespan) / usable_threads),
-                    working_copy.critical_path());
-               if (std::max(lb, makespan) < best_makespan) {
-                  working_copy[op_idx].thread = t;
-
-                  // Perform branching and exit if lower bound is reached
-                  if (schedule_next_op(schedule_next_op)) {
-                     return true;
-                  }
-               }
-
-               thread_loads[t] = old_thread_load;
-               idling_time = old_idling_time;
-               makespan = old_makespan;
-               working_copy[op_idx].start_time = old_start_time;
-            }
-
-            working_copy[op_idx].is_scheduled = false;
-         }
-
-         if (everything_scheduled) {
-            if (makespan < best_makespan) {
-               best_makespan = makespan;
-               for (size_t i = 0; i < sequence.length(); ++i) {
-                  sequence[i].thread = working_copy[i].thread;
-                  sequence[i].start_time = working_copy[i].start_time;
-                  sequence[i].is_scheduled = true;
-               }
-               if (best_makespan <= lower_bound) {
-                  return true;
-               }
-            }
-         }
-
-         return false;
-      };
-
       auto nonrecursive_schedule_op = [&]() -> bool {
          std::stack<Layer> progress_stack;
          bool revert_depth = false;
@@ -242,7 +155,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          initial_layer.thread_loads_full = thread_loads;
          progress_stack.push(initial_layer);
 
-         std::println("{}----------------------------------------------------------------------------",sequence.length());
+         std::println("{}----------------------------------------------------------------------------{}",sequence.length(),usable_threads);
 
          while(remaining_time() > 0.0){
 
@@ -270,23 +183,33 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                   continue;
                }
             }
+
+            if(thread_idx >= usable_threads){
+               if(debug8count < 140){
+                  ////std::println("threadidx {} exceeded usable threads {}", thread_idx, usable_threads);
+               }
+               revert_thread_idx = true;
+               skip_changes = true;
+            }
+
             if(debug8count < 140){
                debug8count++;
                std::println("Depth: {}, Op idx: {}, Thread idx: {}, Best makespan: {}, Current makespan: {}", depth, op_idx, thread_idx, best_makespan, makespan);
-               ////std::println("[{},{},{},{},{}]", working_copy[0].is_scheduled, working_copy[1].is_scheduled, working_copy[2].is_scheduled, working_copy[3].is_scheduled, working_copy[4].is_scheduled);            
             }
 
             if(!skip_changes){
                //old_thread_load = thread_loads[thread_idx];
                working_copy[op_idx].is_scheduled = true;
                const std::size_t start_time = std::max(thread_loads[thread_idx], working_copy.earliest_start(op_idx));
+               ////std::println("threadloads: {},threadloads(i): {}, earlieststart: {}, starttime: {}",thread_loads, thread_loads[thread_idx],working_copy.earliest_start(op_idx),start_time);
                working_copy[op_idx].start_time = start_time;
                idling_time += (start_time - thread_loads[thread_idx]);
                thread_loads[thread_idx] = start_time + sequence[op_idx].fma;
                makespan = std::max(makespan, thread_loads[thread_idx]); 
-               //std::println("Placed {} {} at thread {}, depth {}, makespan {}",working_copy[op_idx].action,working_copy[op_idx].mode,thread_idx,depth,makespan);           
+               if(debug8count < 140){
+                  std::println("{}",working_copy[op_idx]);
+               }
             }
-            
             
             if (depth >= sequence.length() - 1) {
                   if (makespan < best_makespan) {
@@ -322,9 +245,20 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                   }else{
                      if(debug8count < 140){
                         std::println("work/critpath/makespan too high {} / {} / {}, revert thread",((idling_time + sequential_makespan) / usable_threads), working_copy.critical_path(), makespan);
+                        if(working_copy.critical_path() > working_copy.sequential_makespan()){
+                           std::println("CRIT PATH MISCALCULATION ERROR");
+                        }
                      }  
                      revert_thread_idx = true;
                   }
+            }
+
+            if(debug8count < 140){
+               for (size_t i = 20; i < sequence.length(); i++){
+                  std::println("op {} start time {} and scheduled {}", i, working_copy[i].start_time, working_copy[i].is_scheduled);
+               }
+
+               std::println("threadloads {}", thread_loads);
             }
             
 
@@ -348,7 +282,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                }
                thread_loads = previous_state.thread_loads_full; 
                if(debug8count < 140){
-                  ////std::println("after revert threadidx {} nothing else as revertothers {} de {}", thread_idx,revert_op_idx, revert_depth);
+                  std::println("REVERT THREAD; threadidx {} nothing else as revertothers {} de {}", thread_idx,revert_op_idx, revert_depth);
                }
             }
 
@@ -360,7 +294,9 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                   working_copy[op_idx].is_scheduled = false;  
                   previous_state.next_op_idx = previous_state.next_op_idx + 1;
                }else{
-                  std::println("revert opidx {} EXCEEDED length {}", op_idx, sequence.length());
+                  if(debug8count < 140){
+                     std::println("revert opidx {} EXCEEDED length {}", op_idx, sequence.length());
+                  }
                }
                op_idx = previous_state.next_op_idx;
                thread_idx = 0;
@@ -380,6 +316,9 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
             if(revert_depth){
                revert_depth = false;
                if(depth == 0){
+                  for (size_t i = 0; i < sequence.length(); i++){
+                     std::println("{},{}",sequence[i].action,sequence[i].mode);
+                  }                  
                   return true;
                }
                depth--;
@@ -387,7 +326,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                working_copy[progress_stack.top().op_idx].start_time = 0; 
                progress_stack.pop();
                Layer previous_state = progress_stack.top();
-               op_idx = previous_state.next_op_idx;
+               op_idx = previous_state.op_idx;
                thread_idx = previous_state.thread_idx + 1;
                makespan = previous_state.makespan;
                idling_time = previous_state.idletime;
@@ -395,6 +334,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
        
                if(debug8count < 140){
                   std::println("REVERT DEPTH; depth:{} opidx: {}",depth, op_idx);
+                  std::println("mkspn {}, idltme {}, starttime {}, threadloads {}", makespan, idling_time, working_copy[op_idx].start_time,thread_loads);
                }
             }
 
@@ -404,42 +344,6 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
 
 
       if(addInitAcc){
-         if (accumulation_indices.size() < usable_threads) {
-            schedule_op(schedule_op);
-            return best_makespan;
-         }
-
-         const auto initial_combinations = generate_combinations(accumulation_indices.size(), usable_threads);
-
-         bool explored = false;
-         for (const auto& combination : initial_combinations) {
-            if(!remaining_time()){
-               break;
-            }
-
-            std::println("{:.1f}", remaining_time());
-            working_copy = base_sequence;
-            std::fill(thread_loads.begin(), thread_loads.end(), 0);
-            makespan = 0;
-            idling_time = 0;
-
-            std::vector<std::size_t> ops_to_place;
-            ops_to_place.reserve(combination.size());
-            for (std::size_t idx : combination) {
-               ops_to_place.push_back(accumulation_indices[idx]);
-            }
-
-            if (!place_initial_accumulations(ops_to_place)) {
-               continue;
-            }
-
-            explored = true;
-            schedule_op(schedule_op);
-         }
-
-         if (!explored) {
-            schedule_op(schedule_op);
-         }
          return best_makespan;
       } else {
          addInitAcc = nonrecursive_schedule_op();  

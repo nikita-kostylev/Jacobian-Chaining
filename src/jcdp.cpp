@@ -162,10 +162,10 @@ int main(int argc, char* argv[]) {
    }
 
 
-   if (true){//disabled, as only needed for development/testing
+   if (false){//disabled, as only needed for development/testing
      // Schedule dynamic programming sequence via branch & bound nonrecursive
      auto start_sched = std::chrono::high_resolution_clock::now();
-     bnb_scheduler_gpu->set_timer(60.0);
+     bnb_scheduler_gpu->set_timer(30.0);
      bnb_scheduler_gpu->start_timer();
      bnb_scheduler_gpu->schedule(dp_seq, dp_solver.m_usable_threads);
      auto end_sched = std::chrono::high_resolution_clock::now();

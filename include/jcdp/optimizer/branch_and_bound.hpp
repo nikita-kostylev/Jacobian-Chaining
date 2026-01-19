@@ -77,7 +77,6 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          JacobianChain chain = m_chain;
          add_accumulation(sequence, chain, accs, eliminations);
       }
-
       return m_optimal_sequence;
    }
 
