@@ -29,6 +29,8 @@ namespace jcdp {
 
 class Sequence : public std::deque<Operation> {
  public:
+   std::size_t best_makespan_output = 0;
+
    Sequence() = default;
 
    explicit Sequence(Operation&& rhs) : std::deque<Operation> {rhs} {};

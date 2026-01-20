@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(dp_seq, "dynamic_programming");
 
-   if(true) {
+   if(false) {
 
    // Schedule dynamic programming sequence via list scheduling
    auto start_list_sched = std::chrono::high_resolution_clock::now();
@@ -175,6 +175,8 @@ int main(int argc, char* argv[]) {
           "Optimized cost (DP + B&B GPU scheduling ): {}\n", dp_seq.makespan());
      std::println("{}", dp_seq);
    }
+
+
 
 
    
