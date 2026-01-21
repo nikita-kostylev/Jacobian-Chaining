@@ -227,7 +227,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       std::size_t best_makespan = upper_bound;
 
       // Reset potential previous schedule
-      for (Operation& op : working_copy) {
+      for (Operation& op : working_copy.ops) {
          op.is_scheduled = false;
       }
 
