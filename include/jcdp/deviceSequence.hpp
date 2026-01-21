@@ -173,4 +173,21 @@ inline std::size_t device_critical_path(const DeviceSequence& seq) {
 
 }  // namespace jcdp
 
+template<>
+struct std::formatter<jcdp::DeviceSequence> {
+   template<class ParseContext>
+   constexpr auto parse(ParseContext& ctx) {
+      return ctx.begin();
+   }
+
+   template<class FormatContext>
+   auto format(const jcdp::DeviceSequence& seq, FormatContext& ctx) {
+      auto out = ctx.out();
+      for (std::size_t i = 0; i < seq.length; ++i) {
+         out = std::format_to(out, "{}\n", seq.ops[i]);
+      }
+      return out;
+   }
+};
+
 #endif  // JCDP_DEVICE_SEQUENCE_HPP_
