@@ -76,7 +76,7 @@ class Sequence : public std::deque<Operation> {
 
       std::vector<std::size_t> child_ops;
       for (std::size_t i = 0; i < length(); ++i) {
-         if (at(i) < at(op_idx)) {
+         if (this[0][i] < this[0][op_idx]) {
             return i;
          }
       }
@@ -103,8 +103,8 @@ class Sequence : public std::deque<Operation> {
    inline auto critical_path(
         const std::size_t op_idx, std::size_t start_time = 0) const
         -> std::size_t {
-      start_time = std::max(start_time, at(op_idx).start_time);
-      const std::size_t end_time = start_time + at(op_idx).fma;
+      start_time = std::max(start_time, this[0][op_idx].start_time);
+      const std::size_t end_time = start_time + this[0][op_idx].fma;
       std::optional<std::size_t> p = parent(op_idx);
       if (p.has_value()) {
          return critical_path(p.value(), end_time);
@@ -113,6 +113,15 @@ class Sequence : public std::deque<Operation> {
    }
 
    inline auto is_schedulable(const std::size_t op_idx) const -> bool {
+      for (std::size_t i = 0; i < size(); i++) {
+         if (this[0][op_idx] < this[0][i]) {
+            if (!this[0][i].is_scheduled) {
+               return false;
+            }
+         }
+      }
+      return true;
+      /*
       return std::all_of(
            cbegin(), cend(), [this, op_idx](const Operation& op) -> bool {
               if (at(op_idx) < op) {
@@ -121,6 +130,7 @@ class Sequence : public std::deque<Operation> {
 
               return true;
            });
+      */
    }
 
    inline auto is_scheduled() const -> bool {
@@ -130,6 +140,20 @@ class Sequence : public std::deque<Operation> {
    }
 
    inline auto earliest_start(const std::size_t op_idx) const -> std::size_t {
+
+      std::size_t time = 0;
+      std::size_t max = 0;
+      for (std::size_t i = 0; i < size(); i++) {
+         if (this[0][op_idx] < this[0][i]) {
+            time = this[0][i].start_time + this[0][i].fma;
+         }
+         if (time > max ) {
+            max = time;
+         }
+         time = 0;
+      }
+      return max;
+      /*
       return std::transform_reduce(
            cbegin(), cend(), static_cast<std::size_t>(0),
            [](const std::size_t lhs, const std::size_t rhs) -> std::size_t {
@@ -141,6 +165,7 @@ class Sequence : public std::deque<Operation> {
               }
               return 0;
            });
+      */
    }
 
    inline auto count_accumulations() const -> std::size_t {

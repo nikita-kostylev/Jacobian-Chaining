@@ -7,7 +7,8 @@
 set(_local_headers
   ${CMAKE_CURRENT_SOURCE_DIR}/branch_and_bound.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/dynamic_programming.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/optimizer.hpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/optimizer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/bnb_block.hpp)
 
 # Setup header-only IWYU target
 header_only_iwyu_targets("jcdp_optimizer"
