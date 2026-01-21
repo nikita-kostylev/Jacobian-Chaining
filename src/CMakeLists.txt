@@ -15,7 +15,10 @@ target_include_directories(jcdp PRIVATE ${JCDP_include_dirs})
 check_with_iwyu(jcdp IWYU_FLAGS ${JCDP_IWYU_FLAGS})
 check_with_cpplint(jcdp IWYU_FLAGS ${JCDP_IWYU_FLAGS})
 
-add_executable(jcdp_batch "jcdp_batch.cpp")
+add_executable(jcdp_batch 
+"jcdp_batch.cpp"
+"branch_and_bound_gpu_offload.cpp"
+)
 target_include_directories(jcdp_batch PRIVATE ${JCDP_include_dirs})
 check_with_iwyu(jcdp_batch IWYU_FLAGS ${JCDP_IWYU_FLAGS})
 check_with_cpplint(jcdp_batch IWYU_FLAGS ${JCDP_IWYU_FLAGS})
@@ -35,6 +38,12 @@ set_source_files_properties(branch_and_bound_gpu_offload.cpp PROPERTIES
 
 # The final link step must also include offload flags (Clang bundles device image at link).
 target_link_options(jcdp PRIVATE
+  -fopenmp
+  -fopenmp-targets=nvptx64-nvidia-cuda
+  --offload-arch=${GPU_ARCH}
+)
+
+target_link_options(jcdp_batch PRIVATE
   -fopenmp
   -fopenmp-targets=nvptx64-nvidia-cuda
   --offload-arch=${GPU_ARCH}

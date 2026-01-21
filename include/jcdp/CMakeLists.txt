@@ -9,7 +9,8 @@ set(_local_headers
   ${CMAKE_CURRENT_SOURCE_DIR}/jacobian_chain.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/jacobian.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/operation.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/sequence.hpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/sequence.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/deviceSequence.hpp)
 
 # Setup header-only IWYU target
 header_only_iwyu_targets("jcdp"
