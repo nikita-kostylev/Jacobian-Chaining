@@ -47,11 +47,12 @@ struct Layer{
 class BranchAndBoundSchedulerGPU : public Scheduler {
  public:
    virtual auto schedule_impl(
-        Sequence& sequence, const std::size_t usable_threads,
+        DeviceSequence& sequence, const std::size_t usable_threads,
         const std::size_t upper_bound) -> std::size_t override final {
       const std::size_t sequential_makespan = sequence.sequential_makespan();
 
-      Sequence working_copy = sequence;
+      //Sequence working_copy = sequence;
+      DeviceSequence working_copy = sequence;
       std::size_t best_makespan = upper_bound;
 
       std::vector<std::size_t> thread_loads(usable_threads, 0);

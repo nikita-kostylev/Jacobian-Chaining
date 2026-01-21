@@ -58,6 +58,16 @@ inline std::size_t makespan(
    return cost;
 }
 
+inline std::size_t count_accumulations(const DeviceSequence& seq) {
+   std::size_t count = 0;
+   for (std::size_t i = 0; i < seq.length; ++i) {
+      if (seq.ops[i].action == Action::ACCUMULATION) {
+         ++count;
+      }
+   }
+   return count;
+}
+
 /* ------------------ Sequential Makespan --------------------------- */
 
 inline std::size_t sequential_makespan(const DeviceSequence& seq) {

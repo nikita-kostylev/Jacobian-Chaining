@@ -55,8 +55,13 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       m_scheduler = sched;
       m_optimal_sequence = Sequence::make_max();
       m_makespan = m_optimal_sequence.makespan();
-      m_upper_bound = m_makespan;
+      //m_upper_bound = m_makespan;
       m_timer_expired = false;
+
+      dev_m_optimal_sequence = device_make_max();
+      dev_m_makespan = makespan(dev_m_optimal_sequence);
+
+      m_upper_bound = dev_m_makespan;
 
       m_leafs = 0;
       m_updated_makespan = 0;
@@ -105,7 +110,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
    Sequence m_optimal_sequence {Sequence::make_max()};
    std::size_t m_makespan {m_optimal_sequence.makespan()};
-   std::size_t m_upper_bound {m_makespan};
+   std::size_t m_upper_bound {dev_m_makespan};
    std::size_t m_leafs {0};
    std::vector<std::size_t> m_pruned_branches {};
    std::size_t m_updated_makespan {0};
@@ -188,7 +193,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
                scheduler->set_timer(time_to_schedule);
 
                const std::size_t new_makespan = scheduler->schedule(
-                    deviceSequence, m_usable_threads, m_makespan);
+                    deviceSequence, m_usable_threads, dev_m_makespan);
 
                m_timer_expired |= !scheduler->finished_in_time();
 
@@ -196,10 +201,10 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
                m_leafs++;
 
 #pragma omp critical
-               if (m_makespan > new_makespan) {
-                  dev_m_optimal_sequence = ;
-                  m_optimal_sequence = deviceSequence;
-                  m_makespan = new_makespan;
+               if (dev_m_makespan > new_makespan) {
+                  dev_m_optimal_sequence = deviceSequence;
+                  //m_optimal_sequence = deviceSequence;
+                  dev_m_makespan = new_makespan;
                   m_updated_makespan++;
                }
             }

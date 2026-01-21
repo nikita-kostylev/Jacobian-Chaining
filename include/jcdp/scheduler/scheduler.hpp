@@ -15,6 +15,7 @@
 #include <limits>
 #include <print>
 
+#include "jcdp/deviceSequence.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
 
@@ -28,14 +29,14 @@ class Scheduler : public util::Timer {
    virtual ~Scheduler() = default;
 
    inline auto schedule(
-        Sequence& sequence, const std::size_t threads,
+        DeviceSequence& sequence, const std::size_t threads,
         const std::size_t upper_bound = std::numeric_limits<std::size_t>::max())
         -> std::size_t {
 
       start_timer();
 
       // We can never use more threads than we have accumulations
-      std::size_t usable_threads = sequence.count_accumulations();
+      std::size_t usable_threads = count_accumulations(sequence);
       if (threads > 0 && threads < usable_threads) {
          usable_threads = threads;
       }
@@ -43,7 +44,7 @@ class Scheduler : public util::Timer {
       return schedule_impl(sequence, usable_threads, upper_bound);
    }
 
-   virtual auto schedule_impl(Sequence&, const std::size_t, const std::size_t)
+   virtual auto schedule_impl(DeviceSequence&, const std::size_t, const std::size_t)
         -> std::size_t = 0;
 };
 
