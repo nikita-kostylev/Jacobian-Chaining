@@ -26,18 +26,18 @@
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> APPLICATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< //
 
 int main(int argc, char* argv[]) {
-   /*
    jcdp::JacobianChainGenerator jcgen;
    jcdp::optimizer::DynamicProgrammingOptimizer dp_solver;
    jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;
 
-   std::shared_ptr<jcdp::scheduler::BranchAndBoundScheduler> bnb_scheduler =
-        std::make_shared<jcdp::scheduler::BranchAndBoundScheduler>();
-      std::shared_ptr<jcdp::scheduler::BranchAndBoundSchedulerGPU>
-         bnb_scheduler_gpu =
-            std::make_shared<jcdp::scheduler::BranchAndBoundSchedulerGPU>();
-   std::shared_ptr<jcdp::scheduler::PriorityListScheduler> list_scheduler =
-        std::make_shared<jcdp::scheduler::PriorityListScheduler>();
+   jcdp::scheduler::PriorityListScheduler list_scheduler = jcdp::scheduler::PriorityListScheduler();
+   jcdp::scheduler::PriorityListScheduler* list_s_p = &list_scheduler;
+
+   jcdp::scheduler::BranchAndBoundScheduler bnb_scheduler = jcdp::scheduler::BranchAndBoundScheduler();
+   jcdp::scheduler::BranchAndBoundScheduler* bnb_s_p = &bnb_scheduler;
+
+   jcdp::scheduler::BranchAndBoundSchedulerGPU bnb_scheduler_gpu = jcdp::scheduler::BranchAndBoundSchedulerGPU();
+   jcdp::scheduler::BranchAndBoundSchedulerGPU* bnb_s_g_p = &bnb_scheduler_gpu;
 
    if (argc < 2) {
       jcgen.print_help(std::cout);
@@ -96,23 +96,23 @@ int main(int argc, char* argv[]) {
             const std::size_t dp_makespan = dp_seq.makespan();
 
             // Schedule dynamic programming sequence via branch & bound
-            bnb_scheduler->schedule(dp_seq, t, dp_makespan);
+            bnb_s_p->schedule(dp_seq, t, dp_makespan);
 
             // Solve via branch & bound + List scheduling
-            bnb_solver.init(chain, list_scheduler);
+            bnb_solver.init(chain, list_s_p);
             bnb_solver.set_upper_bound(dp_seq.makespan());
             bnb_solver.m_usable_threads = t;
             jcdp::Sequence bnb_seq_list = bnb_solver.solve();
 
             // Solve via branch & bound + branch & bound scheduling
-            bnb_solver.init(chain, bnb_scheduler);
+            bnb_solver.init(chain, bnb_s_p);
             bnb_solver.set_upper_bound(bnb_seq_list.makespan());
             bnb_solver.m_usable_threads = t;
             jcdp::Sequence bnb_seq = bnb_solver.solve();
             const bool finished_bnb = bnb_solver.finished_in_time();
 
             // Solve via branch & bound + branch & bound GPU scheduling
-            bnb_solver.init(chain, bnb_scheduler_gpu);
+            bnb_solver.init(chain, bnb_s_g_p);
             bnb_solver.set_upper_bound(bnb_seq_list.makespan());
             bnb_solver.m_usable_threads = t;
             jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
@@ -133,6 +133,6 @@ int main(int argc, char* argv[]) {
 
       out.close();
    }
-   */
+
    return 0;
 }

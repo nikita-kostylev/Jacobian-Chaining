@@ -1,9 +1,9 @@
 /******************************************************************************
- * @file jcdp/optimizer/dynamic_programming.hpp
+ * @file jcdp/optimizer/bnb_block.hpp
  *
  * @brief This file is part of the JCDP package. It provides an optimizer that
- *        uses a dynamic programming algorithm to find the best possible
- *        brackating (elimination sequence) for a given Jacobian chain.
+ *        uses a branch and bound algorithm to find the best possible
+ *        bracketing (elimination sequence) for a given Jacobian chain.
  ******************************************************************************/
 
 #ifndef JCDP_OPTIMIZER_BRANCH_AND_BOUND_BLOCK_HPP_

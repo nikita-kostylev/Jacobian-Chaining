@@ -40,12 +40,6 @@ int main(int argc, char* argv[]) {
    jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;
    jcdp::optimizer::BnBBlockOptimizer bnb_block_solver;
 
-   //std::shared_ptr<jcdp::scheduler::BranchAndBoundScheduler> bnb_scheduler =
-   //     std::make_shared<jcdp::scheduler::BranchAndBoundScheduler>();
-
-   //std::shared_ptr<jcdp::scheduler::PriorityListScheduler> list_scheduler =
-   //     std::make_shared<jcdp::scheduler::PriorityListScheduler>();
-
    jcdp::scheduler::PriorityListScheduler list_scheduler = jcdp::scheduler::PriorityListScheduler();
    jcdp::scheduler::PriorityListScheduler* list_s_p = &list_scheduler;
 
@@ -54,13 +48,9 @@ int main(int argc, char* argv[]) {
 
    jcdp::scheduler::BnBBlockScheduler bnb_block_scheduler = jcdp::scheduler::BnBBlockScheduler();
    jcdp::scheduler::BnBBlockScheduler* bnb_b_s_p = &bnb_block_scheduler;
-   std::shared_ptr<jcdp::scheduler::BranchAndBoundScheduler> bnb_scheduler =
-        std::make_shared<jcdp::scheduler::BranchAndBoundScheduler>();
-   std::shared_ptr<jcdp::scheduler::BranchAndBoundSchedulerGPU>
-        bnb_scheduler_gpu =
-             std::make_shared<jcdp::scheduler::BranchAndBoundSchedulerGPU>();
-   std::shared_ptr<jcdp::scheduler::PriorityListScheduler> list_scheduler =
-        std::make_shared<jcdp::scheduler::PriorityListScheduler>();
+
+   jcdp::scheduler::BranchAndBoundSchedulerGPU bnb_scheduler_gpu = jcdp::scheduler::BranchAndBoundSchedulerGPU();
+   jcdp::scheduler::BranchAndBoundSchedulerGPU* bnb_s_g_p = &bnb_scheduler_gpu;
 
    if (argc < 2) {
       jcgen.print_help(std::cout);
@@ -162,7 +152,7 @@ int main(int argc, char* argv[]) {
    jcdp::util::write_dot(bnb_seq, "branch_and_bound");
 
    // Solve via branch & bound (GPU scheduler)
-   bnb_solver.init(chain, bnb_scheduler_gpu);
+   bnb_solver.init(chain, bnb_s_g_p);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
    jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
    auto end_bnb_gpu = std::chrono::high_resolution_clock::now();
@@ -178,15 +168,12 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
 
-   }
-
-
    if (true){//disabled, as only needed for development/testing
      // Schedule dynamic programming sequence via branch & bound nonrecursive
      auto start_sched = std::chrono::high_resolution_clock::now();
-     bnb_scheduler_gpu->set_timer(30.0);
-     bnb_scheduler_gpu->start_timer();
-     bnb_scheduler_gpu->schedule(dp_seq, dp_solver.m_usable_threads);
+     bnb_s_g_p->set_timer(30.0);
+     bnb_s_g_p->start_timer();
+     bnb_s_g_p->schedule(dp_seq, dp_solver.m_usable_threads);
      auto end_sched = std::chrono::high_resolution_clock::now();
      std::chrono::duration<double> duration_sched = end_sched - start_sched;
      std::println("\nScheduling duration: {} seconds", duration_sched.count());
@@ -195,8 +182,6 @@ int main(int argc, char* argv[]) {
      std::println("{}", dp_seq);
    }
 
-
-
    // Solve via branch & bound block
    bnb_block_solver.init(chain, bnb_b_s_p);
    bnb_block_solver.set_upper_bound(bnb_seq_list.makespan());
@@ -204,7 +189,7 @@ int main(int argc, char* argv[]) {
    jcdp::Sequence bnb_seq_block = bnb_block_solver.solve();
    auto end_bnb_block = std::chrono::high_resolution_clock::now();
    std::chrono::duration<double> duration_bnb_block = end_bnb_block - start_bnb_block;
-   std::println("\nBnB (bis) solve duration: {} seconds", duration_bnb_block.count());
+   std::println("\nBnB Block solve duration: {} seconds", duration_bnb_block.count());
    bnb_block_solver.print_stats();
    std::println("Optimized cost (BnB): {}\n", bnb_seq_block.makespan());
    std::println("{}", bnb_seq_block);

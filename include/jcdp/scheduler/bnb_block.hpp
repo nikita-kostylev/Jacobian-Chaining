@@ -1,8 +1,8 @@
 /******************************************************************************
- * @file jcdp/scheduler/branch_and_bound.hpp
+ * @file jcdp/scheduler/bnb_block.hpp
  *
  * @brief This file is part of the JCDP package. It provides branch & bound
- *        algorithm to find the optimal schedule for a given elimination
+ *        block algorithm to find the optimal schedule for a given elimination
  *        sequence.
  ******************************************************************************/
 
