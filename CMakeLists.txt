@@ -57,6 +57,8 @@ option(JCDP_USE_OPENMP
   "Whether to use OpenMP." ON)
 # option(JCDP_BUILD_DOXYGEN
 #   "Whether to build the Doxygen documentation." OFF)
+option(JCDP_OPENMP_GPU
+  "Whether to offload OpenMP to GPU." ON)
 
 # **************************************************************************** #
 # Include some modules (intrinsics, PIC, sanitation, etc.)

@@ -26,6 +26,7 @@
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> APPLICATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< //
 
 int main(int argc, char* argv[]) {
+   /*
    jcdp::JacobianChainGenerator jcgen;
    jcdp::optimizer::DynamicProgrammingOptimizer dp_solver;
    jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;
@@ -132,6 +133,6 @@ int main(int argc, char* argv[]) {
 
       out.close();
    }
-
+   */
    return 0;
 }
