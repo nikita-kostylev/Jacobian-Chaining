@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "jcdp/deviceSequence.hpp"
 #include "jcdp/jacobian.hpp"
 #include "jcdp/jacobian_chain.hpp"
 #include "jcdp/operation.hpp"
@@ -69,8 +70,8 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       start_timer();
       std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
 
-      #pragma omp parallel default(shared)
-      #pragma omp single
+#pragma omp parallel default(shared)
+#pragma omp single
       while (++accs <= m_length) {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
@@ -99,6 +100,9 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
    }
 
  private:
+   DeviceSequence dev_m_optimal_sequence {device_make_max()};
+   std::size_t dev_m_makespan {makespan(dev_m_optimal_sequence)};
+
    Sequence m_optimal_sequence {Sequence::make_max()};
    std::size_t m_makespan {m_optimal_sequence.makespan()};
    std::size_t m_upper_bound {m_makespan};
@@ -134,10 +138,22 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          JacobianChain task_chain = chain;
          std::vector<OpPair> task_eliminations = eliminations;
 
-         #pragma omp task default(none) firstprivate(task_sequence)            \
-                          firstprivate(task_chain, task_eliminations)
+#pragma omp task default(none) firstprivate(task_sequence)                     \
+     firstprivate(task_chain, task_eliminations)
          add_elimination(task_sequence, task_chain, task_eliminations);
       }
+   }
+
+   inline jcdp::DeviceSequence to_device(const jcdp::Sequence& seq) {
+      jcdp::DeviceSequence d {};
+      d.length = seq.length();
+      std::println("Actual size of sequence is: %d", d);
+
+      for (std::size_t i = 0; i < d.length; ++i) {
+         d.ops[i] = seq[i];
+      }
+
+      return d;
    }
 
    inline auto add_elimination(
@@ -163,24 +179,26 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          Sequence final_sequence = sequence;
          const std::shared_ptr<scheduler::Scheduler> scheduler = m_scheduler;
 
-         #pragma omp task default(shared) \
-                          firstprivate(final_sequence, scheduler)
+         DeviceSequence deviceSequence = to_device(sequence);
+
+#pragma omp task default(shared) firstprivate(deviceSequence, scheduler)
          {
             const double time_to_schedule = remaining_time();
             if (time_to_schedule) {
                scheduler->set_timer(time_to_schedule);
 
                const std::size_t new_makespan = scheduler->schedule(
-                    final_sequence, m_usable_threads, m_makespan);
+                    deviceSequence, m_usable_threads, m_makespan);
 
                m_timer_expired |= !scheduler->finished_in_time();
 
-               #pragma omp atomic
+#pragma omp atomic
                m_leafs++;
 
-               #pragma omp critical
+#pragma omp critical
                if (m_makespan > new_makespan) {
-                  m_optimal_sequence = final_sequence;
+                  dev_m_optimal_sequence = ;
+                  m_optimal_sequence = deviceSequence;
                   m_makespan = new_makespan;
                   m_updated_makespan++;
                }
@@ -194,7 +212,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       if (lower_bound >= m_makespan || lower_bound > m_upper_bound) {
          std::size_t& prune_counter = m_pruned_branches[sequence.length()];
 
-         #pragma omp atomic
+#pragma omp atomic
          prune_counter++;
 
          return;
