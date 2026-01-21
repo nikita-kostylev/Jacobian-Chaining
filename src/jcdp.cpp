@@ -36,26 +36,26 @@ int main(int argc, char* argv[]) {
 
    jcdp::JacobianChainGenerator jcgen;
    jcdp::optimizer::DynamicProgrammingOptimizer dp_solver;
-   /*    jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;
-      jcdp::optimizer::BnBBlockOptimizer bnb_block_solver;
+   jcdp::optimizer::BranchAndBoundOptimizer bnb_solver;
+   /*    jcdp::optimizer::BnBBlockOptimizer bnb_block_solver;
 
-      jcdp::scheduler::PriorityListScheduler list_scheduler =
-      jcdp::scheduler::PriorityListScheduler();
-      jcdp::scheduler::PriorityListScheduler* list_s_p = &list_scheduler;
+       jcdp::scheduler::PriorityListScheduler list_scheduler =
+       jcdp::scheduler::PriorityListScheduler();
+       jcdp::scheduler::PriorityListScheduler* list_s_p = &list_scheduler;
 
-      jcdp::scheduler::BranchAndBoundScheduler bnb_scheduler =
-      jcdp::scheduler::BranchAndBoundScheduler();
-      jcdp::scheduler::BranchAndBoundScheduler* bnb_s_p = &bnb_scheduler;
+       jcdp::scheduler::BranchAndBoundScheduler bnb_scheduler =
+       jcdp::scheduler::BranchAndBoundScheduler();
+       jcdp::scheduler::BranchAndBoundScheduler* bnb_s_p = &bnb_scheduler;
 
-      jcdp::scheduler::BnBBlockScheduler bnb_block_scheduler =
-      jcdp::scheduler::BnBBlockScheduler(); jcdp::scheduler::BnBBlockScheduler*
-      bnb_b_s_p = &bnb_block_scheduler;
+       jcdp::scheduler::BnBBlockScheduler bnb_block_scheduler =
+       jcdp::scheduler::BnBBlockScheduler(); jcdp::scheduler::BnBBlockScheduler*
+       bnb_b_s_p = &bnb_block_scheduler;
+*/
+   jcdp::scheduler::BranchAndBoundSchedulerGPU bnb_scheduler_gpu =
+        jcdp::scheduler::BranchAndBoundSchedulerGPU();
 
-      jcdp::scheduler::BranchAndBoundSchedulerGPU bnb_scheduler_gpu =
-      jcdp::scheduler::BranchAndBoundSchedulerGPU();
-      jcdp::scheduler::BranchAndBoundSchedulerGPU* bnb_s_g_p =
-      &bnb_scheduler_gpu;
-    */
+   jcdp::scheduler::BranchAndBoundSchedulerGPU* bnb_s_g_p = &bnb_scheduler_gpu;
+
    if (argc < 2) {
       jcgen.print_help(std::cout);
       dp_solver.print_help(std::cout);
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
    const std::filesystem::path config_filename(argv[1]);
    try {
       dp_solver.parse_config(config_filename, true);
-      // bnb_solver.parse_config(config_filename, true);
+      bnb_solver.parse_config(config_filename, true);
       // bnb_block_solver.parse_config(config_filename, true);
       jcgen.parse_config(config_filename, true);
       jcgen.init_rng();
@@ -102,6 +102,20 @@ int main(int argc, char* argv[]) {
    std::println("{}", dp_seq);
 
    jcdp::util::write_dot(dp_seq, "dynamic_programming");
+
+   // Solve via branch & bound (GPU scheduler)
+   bnb_solver.init(chain, bnb_s_g_p);
+   auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
+   jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
+   auto end_bnb_gpu = std::chrono::high_resolution_clock::now();
+   std::chrono::duration<double> duration_bnb_gpu = end_bnb_gpu - start_bnb_gpu;
+   std::println(
+        "\nBnB (GPU sched) solve duration: {} seconds",
+        duration_bnb_gpu.count());
+   bnb_solver.print_stats();
+   std::println(
+        "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
+   std::println("{}", bnb_seq_gpu);
 
    /*    if (false) {
 
