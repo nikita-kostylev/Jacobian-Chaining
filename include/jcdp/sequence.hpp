@@ -59,6 +59,22 @@ class Sequence {
       --len;
    }
 
+   inline Operation& back() noexcept {
+      assert(len > 0);
+      return ops[len - 1];
+   }
+
+   inline const Operation& back() const noexcept {
+      assert(len > 0);
+      return ops[len - 1];
+   }
+
+   // --- operator compatibility ---
+   inline Sequence& operator+=(const Operation& rhs) noexcept {
+      push_back(rhs);
+      return *this;
+   }
+
    inline void clear() {
       len = 0;
    }
@@ -174,5 +190,21 @@ class Sequence {
 };
 
 }  // namespace jcdp
+
+// ---- formatter (CPU only) ----
+template<>
+struct std::formatter<jcdp::Sequence> {
+   constexpr auto parse(auto& ctx) {
+      return ctx.begin();
+   }
+
+   auto format(const jcdp::Sequence& seq, auto& ctx) const {
+      auto out = ctx.out();
+      for (std::size_t i = 0; i < seq.length(); ++i) {
+         out = std::format_to(out, "{}\n", seq[i]);
+      }
+      return out;
+   }
+};
 
 #endif  // JCDP_SEQUENCE_HPP_
