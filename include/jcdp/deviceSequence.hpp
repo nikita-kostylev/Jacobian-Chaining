@@ -20,12 +20,12 @@ struct DeviceSequence {
 
 /* ========================= DEVICE FUNCTIONS ======================= */
 
-#pragma omp declare target
+// #pragma omp declare target
 
 /* ------------------------- Makespan ------------------------------- */
 /* thread == SIZE_MAX means "any thread"                              */
 
-inline DeviceSequence make_max() {
+inline DeviceSequence device_make_max() {
    DeviceSequence seq {};
    seq.length = 1;
 
@@ -37,6 +37,14 @@ inline DeviceSequence make_max() {
    op.is_scheduled = true;
 
    return seq;
+}
+
+inline std::size_t device_sequential_makespan(const DeviceSequence& seq) {
+   std::size_t cost = 0;
+   for (std::size_t i = 0; i < seq.length; ++i) {
+      cost += seq.ops[i].fma;
+   }
+   return cost;
 }
 
 inline std::size_t makespan(
@@ -121,7 +129,7 @@ inline std::size_t earliest_start(
 
 /* ------------------ Critical Path --------------------------------- */
 
-inline std::size_t critical_path(const DeviceSequence& seq) {
+inline std::size_t device_critical_path(const DeviceSequence& seq) {
 
    std::size_t max_cp = 0;
 
@@ -161,7 +169,7 @@ inline std::size_t critical_path(const DeviceSequence& seq) {
    return max_cp;
 }
 
-#pragma omp end declare target
+//#pragma omp end declare target
 
 }  // namespace jcdp
 

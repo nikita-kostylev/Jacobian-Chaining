@@ -55,7 +55,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       m_scheduler = sched;
       m_optimal_sequence = Sequence::make_max();
       m_makespan = m_optimal_sequence.makespan();
-      //m_upper_bound = m_makespan;
+      // m_upper_bound = m_makespan;
       m_timer_expired = false;
 
       dev_m_optimal_sequence = device_make_max();
@@ -104,6 +104,18 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       std::println("]");
    }
 
+   inline jcdp::DeviceSequence to_device(const jcdp::Sequence& seq) {
+      jcdp::DeviceSequence d {};
+      d.length = seq.length();
+      std::println("Actual size of sequence is: %d", d);
+
+      for (std::size_t i = 0; i < d.length; ++i) {
+         d.ops[i] = seq[i];
+      }
+
+      return d;
+   }
+
  private:
    DeviceSequence dev_m_optimal_sequence {device_make_max()};
    std::size_t dev_m_makespan {makespan(dev_m_optimal_sequence)};
@@ -149,18 +161,6 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       }
    }
 
-   inline jcdp::DeviceSequence to_device(const jcdp::Sequence& seq) {
-      jcdp::DeviceSequence d {};
-      d.length = seq.length();
-      std::println("Actual size of sequence is: %d", d);
-
-      for (std::size_t i = 0; i < d.length; ++i) {
-         d.ops[i] = seq[i];
-      }
-
-      return d;
-   }
-
    inline auto add_elimination(
         Sequence& sequence, JacobianChain& chain,
         std::vector<OpPair>& eliminations, std::size_t elim_idx = 0) -> void {
@@ -203,7 +203,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 #pragma omp critical
                if (dev_m_makespan > new_makespan) {
                   dev_m_optimal_sequence = deviceSequence;
-                  //m_optimal_sequence = deviceSequence;
+                  // m_optimal_sequence = deviceSequence;
                   dev_m_makespan = new_makespan;
                   m_updated_makespan++;
                }
