@@ -6,6 +6,8 @@
  *        it can be wired separately.
  ******************************************************************************/
 
+/*
+
 #ifndef JCDP_SCHEDULER_BRANCH_AND_BOUND_GPU_HPP_
 #define JCDP_SCHEDULER_BRANCH_AND_BOUND_GPU_HPP_
 
@@ -248,7 +250,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          }
       }
 
-      /*
+      / * here without space
       // Helper: generate all k-combinations (indices) from n items (0..n-1).
       auto generate_combinations = [](std::size_t n, std::size_t k)
            -> std::vector<std::vector<std::size_t>> {
@@ -273,9 +275,9 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
                comb[j] = comb[j - 1] + 1;
          }
          return res;
-      };*/
+      };
 
-      /*auto place_initial_accumulations = [&](const std::vector<std::size_t>& early_accs) -> bool {
+      auto place_initial_accumulations = [&](const std::vector<std::size_t>& early_accs) -> bool {
          // Return if time's up
          if (!remaining_time()) {
             return false;
@@ -290,7 +292,7 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
          }
 
          return true;
-      };*/
+      };  here * / without space
 
       Sequence result_sequence;
 
@@ -313,6 +315,30 @@ class BranchAndBoundSchedulerGPU : public Scheduler {
 
 #endif  // JCDP_SCHEDULER_BRANCH_AND_BOUND_GPU_HPP_
 
+*/
 
+
+// include/jcdp/scheduler/branch_and_bound_gpu.hpp
+#ifndef JCDP_SCHEDULER_BRANCH_AND_BOUND_GPU_HPP_
+#define JCDP_SCHEDULER_BRANCH_AND_BOUND_GPU_HPP_
+
+#include <cstddef>
+
+#include "jcdp/scheduler/scheduler.hpp"
+#include "jcdp/sequence.hpp"
+
+namespace jcdp::scheduler {
+
+class BranchAndBoundSchedulerGPU : public Scheduler {
+ public:
+  auto schedule_impl(
+      Sequence& sequence,
+      std::size_t usable_threads,
+      std::size_t upper_bound) -> std::size_t override final;
+};
+
+} // namespace jcdp::scheduler
+
+#endif
 
 
