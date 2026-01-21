@@ -43,14 +43,14 @@ class PriorityListScheduler : public Scheduler {
               const std::size_t level_1 = sequence.level(op_idx1);
               const std::size_t level_2 = sequence.level(op_idx2);
               if (level_1 == level_2) {
-                 return sequence.at(op_idx1).fma < sequence.at(op_idx2).fma;
+                 return sequence.ops[op_idx1].fma < sequence.ops[op_idx2].fma;
               }
               return sequence.level(op_idx1) < sequence.level(op_idx2);
            },
            std::move(queue_cont));
 
       // Reset potential previous schedule
-      for (Operation& op : sequence) {
+      for (Operation& op : sequence.ops) {
          op.is_scheduled = false;
       }
 

@@ -163,7 +163,7 @@ class BnBBlockScheduler {//: public util::Timer{
          vec_best_makespan[i] = upper_bound;
          //vec_thread_loads[i] = std::vector<std::size_t>(usable_threads, 0);
 
-         for (Operation& op : vec_working_copy[i]) {
+         for (Operation& op : vec_working_copy[i].ops) {
             op.is_scheduled = false;
          }
 
@@ -224,7 +224,7 @@ class BnBBlockScheduler {//: public util::Timer{
       std::size_t idling_time = 0;
 
       // Reset potential previous schedule
-      for (Operation& op : working_copy) {
+      for (Operation& op : working_copy.ops) {
          op.is_scheduled = false;
       }
 

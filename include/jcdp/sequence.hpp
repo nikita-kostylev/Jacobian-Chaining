@@ -196,6 +196,21 @@ class Sequence {
       return max_cp;
    }
 
+   inline auto level(const std::size_t op_idx) const -> std::size_t {
+      std::size_t depth = 1;
+      std::size_t current = op_idx;
+
+      while (true) {
+         const std::size_t p = parent(current);
+         if (p == static_cast<std::size_t>(-1))
+            break;
+         depth++;
+         current = p;
+      }
+
+      return depth;
+   }
+
    // ===== Factory =====
    inline static Sequence make_max() {
       Sequence s;

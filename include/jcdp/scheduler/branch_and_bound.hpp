@@ -39,7 +39,7 @@ class BranchAndBoundScheduler : public Scheduler {
       std::size_t idling_time = 0;
 
       // Reset potential previous schedule
-      for (Operation& op : working_copy) {
+      for (Operation& op : working_copy.ops) {
          op.is_scheduled = false;
       }
 
