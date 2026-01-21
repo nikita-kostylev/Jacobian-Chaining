@@ -69,10 +69,28 @@ class Sequence {
       return ops[len - 1];
    }
 
-   // --- operator compatibility ---
-   inline Sequence& operator+=(const Operation& rhs) noexcept {
+   inline auto operator+=(const Operation& rhs) -> Sequence& {
       push_back(rhs);
       return *this;
+   }
+
+   inline auto operator+=(const Sequence& rhs) -> Sequence& {
+      for (std::size_t i = 0; i < rhs.length(); ++i) {
+         push_back(rhs.ops[i]);
+      }
+      return *this;
+   }
+
+   inline auto operator+(const Sequence& rhs) -> const Sequence {
+      Sequence res = *this;
+      res += rhs;
+      return res;
+   }
+
+   inline auto operator+(const Operation& rhs) -> const Sequence {
+      Sequence res = *this;
+      res += rhs;
+      return res;
    }
 
    inline void clear() {
