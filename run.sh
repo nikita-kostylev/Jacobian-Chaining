@@ -1,4 +1,4 @@
-cmake -B build -S . -DCMAKE_CXX_COMPILER=clang++  -DGPU_ARCH=sm_80
+cmake -B build -S . -DCMAKE_CXX_COMPILER=clang++  -DGPU_ARCH=sm_90
 
 cmake --build build -j
 
@@ -8,6 +8,8 @@ export LIBOMPTARGET_DEBUG=1
 export TMPDIR=$HOME/tmp
 export TMP=$HOME/tmp
 export TEMP=$HOME/tmp
+export OMP_DEFAULT_DEVICE=0
+export CUDA_VISIBLE_DEVICES=0
 
 
 ./build/bin/jcdp ./additionals/configs/config.in

@@ -72,7 +72,7 @@ const std::size_t sequential_makespan){
          stack_array[stack_pointer++] = initial_layer;
 
          int timer_replacement = 0;
-         while(timer_replacement<10000000){  //add remaining_time() check again somehow to gpu
+         while(timer_replacement<10000){  //add remaining_time() check again somehow to gpu
             timer_replacement++;
 
             if(op_idx >= working_copy.length && depth == 0){
