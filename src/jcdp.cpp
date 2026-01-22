@@ -99,6 +99,8 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(dp_seq, "dynamic_programming");
 
+   if(true) {
+
    // Schedule dynamic programming sequence via list scheduling
    auto start_list_sched = std::chrono::high_resolution_clock::now();
    list_s_p->schedule(dp_seq, dp_solver.m_usable_threads);
@@ -151,6 +153,7 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(bnb_seq, "branch_and_bound");
 
+   }
    // Solve via branch & bound (GPU scheduler)
    bnb_solver.init(chain, bnb_s_g_p);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
@@ -167,6 +170,7 @@ int main(int argc, char* argv[]) {
    std::println("{}", bnb_seq_gpu);
 
    jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
+   
 
    if (true){//disabled, as only needed for development/testing
      // Schedule dynamic programming sequence via branch & bound nonrecursive
@@ -183,18 +187,23 @@ int main(int argc, char* argv[]) {
    }
 
    // Solve via branch & bound block
-   bnb_block_solver.init(chain, bnb_b_s_p);
-   bnb_block_solver.set_upper_bound(bnb_seq_list.makespan());
-   auto start_bnb_block = std::chrono::high_resolution_clock::now();
-   jcdp::Sequence bnb_seq_block = bnb_block_solver.solve();
-   auto end_bnb_block = std::chrono::high_resolution_clock::now();
-   std::chrono::duration<double> duration_bnb_block = end_bnb_block - start_bnb_block;
-   std::println("\nBnB Block solve duration: {} seconds", duration_bnb_block.count());
-   bnb_block_solver.print_stats();
-   std::println("Optimized cost (BnB): {}\n", bnb_seq_block.makespan());
-   std::println("{}", bnb_seq_block);
+   if(false){ //disabled, as we only test simple solution
+     bnb_block_solver.init(chain, bnb_b_s_p);
+     //remove FOR MVP bnb_block_solver.set_upper_bound(bnb_seq_list.makespan());
+     auto start_bnb_block = std::chrono::high_resolution_clock::now();
+     jcdp::Sequence bnb_seq_block = bnb_block_solver.solve();
+     auto end_bnb_block = std::chrono::high_resolution_clock::now();
+     std::chrono::duration<double> duration_bnb_block = end_bnb_block - start_bnb_block;
+     std::println("\nBnB Block solve duration: {} seconds", duration_bnb_block.count());
+     bnb_block_solver.print_stats();
+     std::println("Optimized cost (BnB): {}\n", bnb_seq_block.makespan());
+     std::println("{}", bnb_seq_block);
 
-   jcdp::util::write_dot(bnb_seq_block, "branch_and_bound");
+     jcdp::util::write_dot(bnb_seq_block, "branch_and_bound");
+   }
 
+
+
+   
    return 0;
 }

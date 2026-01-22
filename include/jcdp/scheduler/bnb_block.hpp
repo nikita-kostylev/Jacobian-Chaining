@@ -179,8 +179,8 @@ class BnBBlockScheduler {//: public util::Timer{
       std::size_t* r = &results[0];
       std::size_t* tl = &vec_thread_loads[0];
       
-      #pragma omp target map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
-      #pragma omp parallel for
+      //SKIP WARNING FOR MVP#pragma omp target map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
+      //SKIP WARNING FOR MVP#pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          r[i] = lambda_schedule(seqs[i], ut[i],
             wc[i], bms[i], tl,
