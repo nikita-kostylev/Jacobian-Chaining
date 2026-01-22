@@ -25,6 +25,8 @@
 
 namespace jcdp::scheduler {
 
+
+// Method is not class member because of a problem when offloading.
 std::size_t lambda_schedule(
       Sequence& sequence, std::size_t usable_threads,
       Sequence& working_copy, std::size_t best_makespan,
@@ -137,10 +139,16 @@ class BnBBlockScheduler {//: public util::Timer{
    BnBBlockScheduler() = default;
    ~BnBBlockScheduler() = default;
 
+   /*
+    * This is part of the second attempt of block scheduling.
+    * We gather all information of the sequences to call the inner
+    * scheduling.
+    */
    std::size_t schedule_gpu(
       std::vector<Sequence>& sequences, const std::size_t threads,
       const std::size_t upper_bound = std::numeric_limits<std::size_t>::max()) {
 
+      // Prepare data for block scheduling
       std::vector<std::size_t> vec_usable_threads(sequences.size());
       std::vector<std::size_t> vec_sequential_makespan(sequences.size());
       std::vector<Sequence> vec_working_copy(sequences.size());
@@ -178,7 +186,10 @@ class BnBBlockScheduler {//: public util::Timer{
       std::size_t* lbs = &vec_lower_bound[0];
       std::size_t* r = &results[0];
       std::size_t* tl = &vec_thread_loads[0];
-      
+
+      /*
+       * Here we schedule all the sequences at once in the second attempt.
+       */
       //SKIP WARNING FOR MVP#pragma omp target map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
       //SKIP WARNING FOR MVP#pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {

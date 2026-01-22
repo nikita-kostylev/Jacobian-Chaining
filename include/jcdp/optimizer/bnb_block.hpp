@@ -159,11 +159,9 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          assert(!eliminations[elim_idx][0].has_value());
          assert(!eliminations[elim_idx][1].has_value());
 
+         // Instead of scheduling here, we gather the sequences together
          #pragma omp critical
          sequences.push_back(sequence);
-         // Start new task for the scheduling of the final sequence. If
-         // branch & bound is used as the scheduling algorithm, this can take
-         // some time.
          return;
       }
 
@@ -223,6 +221,11 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       return op;
    }
 
+   /*
+    * This is the second attempt of block scheduling.
+    * Instead of scheduling everything here, the sequences are sent to the
+    * scheduler to be taken care of.
+    */
    inline auto schedule_all_late() -> void {
       std::println("To schedule: {}", sequences.size());
 
@@ -230,6 +233,12 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       m_optimal_sequence = sequences[index];
       m_makespan = m_optimal_sequence.makespan();
    }
+
+   /*
+    * This is the first attempt of block scheduling.
+    * We schedule all the gathered sequences at once using target parallel for
+    * and the schedule() method from the scheduler.
+    */
    inline auto schedule_all() -> void {
       std::println("To schedule: {}", sequences.size());
 
@@ -240,9 +249,9 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       // need to map raw pointer
       scheduler::BnBBlockScheduler* scheduler = &m_scheduler[0];
 
-      //#pragma omp target data map(to:seqs[:n]) map(to:scheduler)
-      //#pragma omp target parallel for firstprivate(scheduler)
-      #pragma omp parallel for
+      //GPU: #pragma omp target map(to:seqs[:n]) map(to:scheduler)
+      //GPU: #pragma omp parallel for //firstprivate(scheduler)
+      // CPU: #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
          const double time_to_schedule = remaining_time();
@@ -260,8 +269,9 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
             m_leafs++;
 
             // No critical with gpu
-            #pragma omp critical
+            //#pragma omp critical
 
+            // This would be better done outside the for loop all at once
             if (m_makespan > new_makespan) {
                m_optimal_sequence = seqs[i];
                m_makespan = new_makespan;
