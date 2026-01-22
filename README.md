@@ -2,8 +2,11 @@
 
 # Jacobian Chaining
 
-This repository contains a reference implementation which solves various versions of the Jacobian Chain Bracketing Problem. The solver can handle matrix-free, limited-memory and scheduled versions of the problem. There is a dynamic programming algorithm which will solve the computationally tractable problems and will act as aheuristic for the NP-complete scheduled variant. A second branch & bound algorithm can be used to find the global optimum for all variants.
+This repository contains a GPU-compatible adaptation of https://github.com/STCE-at-RWTH/Jacobian-Chaining, a reference implementation which solves various versions of the Jacobian Chain Bracketing Problem.
+The branch & bound algorithm for scheduling is implemented in a non-recursive version with a replacement of dynamic memory access structures with arrays.
 
+The implementation is not complete, as the non-recursive version has a rare edgecase where it is stuck in a loop.
+If the branch & bound optimizer is run with the GPU-version of the branch & bound scheduler the result are wrong, as the starting time function is not working correct.
 ## Build
 
 ### Requirements
@@ -11,28 +14,12 @@ This repository contains a reference implementation which solves various version
 - **C++23 Compiler / C++23 Standard Library**
 
    Tested on Linux with:
-   - GCC 14.1.0
-   - Clang 18.1.8 (libc++)
-   - Intel icx 2024.1.0
-   - AMD aocc 5.0.0
-
-   Tested on macOS with:
-   - AppleClang 16.0.0
-
-   Tested on Windows with:
-   - Visual Studio 2022 (msvc 17.x)
+   - Clang 18.1.2 (libc++)
 
 - **CMake >= 3.25.0**
 
    On Windows we need at least CMake 3.30.0 if OpenMP is enabled.
 
-- **Python >= 3.9** (only to generate plots)
-
-   Packages:
-   - argparse
-   - matplotlib
-   - pandas
-   - seaborn
 
 ### Commands
 
