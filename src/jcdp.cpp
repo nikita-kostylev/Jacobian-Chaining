@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(dp_seq, "dynamic_programming");
 
-   if(false) {
+   if(true) {
 
    // Schedule dynamic programming sequence via list scheduling
    auto start_list_sched = std::chrono::high_resolution_clock::now();
@@ -153,6 +153,7 @@ int main(int argc, char* argv[]) {
 
    jcdp::util::write_dot(bnb_seq, "branch_and_bound");
 
+   }
    // Solve via branch & bound (GPU scheduler)
    bnb_solver.init(chain, bnb_s_g_p);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
@@ -169,7 +170,7 @@ int main(int argc, char* argv[]) {
    std::println("{}", bnb_seq_gpu);
 
    jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
-   }
+   
 
    if (true){//disabled, as only needed for development/testing
      // Schedule dynamic programming sequence via branch & bound nonrecursive

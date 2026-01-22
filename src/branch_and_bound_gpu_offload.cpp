@@ -2,10 +2,6 @@
 #include <cstddef>
 #include <array>
 
-//#include <stack>
-//#include <filesystem>
-//#include <iostream>
-//#include <memory>
 #include <omp.h>
 
 #include "jcdp/operation.hpp"
@@ -30,26 +26,21 @@ struct Layer{
   time_t idletime  = 0;
   size_t makespan = 0;
 
-  std::array<std::size_t,4> thread_loads_full_array{};      // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
+  std::array<std::size_t,20> thread_loads_full_array{};      // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
 };
 
 #pragma omp declare target
 static DeviceSequence nonrecursive_schedule_op(std::size_t& best_makespan, DeviceSequence& working_copy, const std::size_t usable_threads,
 const std::size_t sequential_makespan){
 
-         //copied from setup before
-         std::array<std::size_t,4> thread_loads{};      // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
+         std::array<std::size_t,20> thread_loads{};      // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
          thread_loads.fill(0);
-         
 
          std::size_t makespan = 0;
          std::size_t idling_time = 0;
 
-         Layer stack_array[11]; // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
+         Layer stack_array[20]; // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
          std::size_t stack_pointer = 0;
-
-
-         //std::stack<Layer> progress_stack;
          bool revert_depth = false;
          bool revert_op_idx = false;
          bool revert_thread_idx = false;
@@ -78,10 +69,11 @@ const std::size_t sequential_makespan){
          initial_layer.makespan = makespan;
          initial_layer.idletime = idling_time;
          initial_layer.thread_loads_full_array = thread_loads;
-         //progress_stack.push(initial_layer);
          stack_array[stack_pointer++] = initial_layer;
 
-         while(true){  //add remaining_time() check again somehow to gpu
+         int timer_replacement = 0;
+         while(timer_replacement<10000000){  //add remaining_time() check again somehow to gpu
+            timer_replacement++;
 
             if(op_idx >= working_copy.length && depth == 0){
                return sequence;
@@ -95,7 +87,6 @@ const std::size_t sequential_makespan){
 
             if (working_copy.ops[op_idx].is_scheduled or !is_schedulable(working_copy, op_idx)) {
                op_idx++;
-               //progress_stack.top().next_op_idx = op_idx;
                stack_array[stack_pointer - 1].next_op_idx = op_idx;
                if(op_idx >= sequence.length){
                   revert_op_idx = true;
@@ -145,7 +136,6 @@ const std::size_t sequential_makespan){
                      current_layer.makespan = makespan;
                      current_layer.idletime = idling_time;
                      current_layer.thread_loads_full_array = thread_loads;   
-                     //progress_stack.push(current_layer);
                      stack_array[stack_pointer++] = current_layer;
                      op_idx=0;
                      thread_idx=0; 
@@ -156,7 +146,6 @@ const std::size_t sequential_makespan){
 
             if(revert_thread_idx){
                revert_thread_idx = false;
-               //Layer previous_state = progress_stack.top();
                Layer previous_state = stack_array[stack_pointer -1];
                if(op_idx < working_copy.length){
                   working_copy.ops[op_idx].start_time = 0;
@@ -173,7 +162,6 @@ const std::size_t sequential_makespan){
 
             if(revert_op_idx ){
                revert_op_idx = false;
-               //Layer& previous_state = progress_stack.top();
                Layer& previous_state = stack_array[stack_pointer - 1];
                if(op_idx < working_copy.length){
                   working_copy.ops[op_idx].start_time = 0;
@@ -185,7 +173,6 @@ const std::size_t sequential_makespan){
                makespan = previous_state.makespan;
                idling_time = previous_state.idletime;
                if(stack_pointer>0){
-                  //thread_loads = progress_stack.top().thread_loads_full_array;
                   thread_loads = stack_array[stack_pointer -1].thread_loads_full_array;
                }
                if(op_idx >= working_copy.length){
@@ -199,13 +186,10 @@ const std::size_t sequential_makespan){
                   return sequence;
                }
                depth--;
-               //size_t old_idx = progress_stack.top().op_idx;
-               size_t old_idx = stack_array[--stack_pointer].op_idx;
+               size_t old_idx = stack_array[stack_pointer-1].op_idx;
                working_copy.ops[old_idx].is_scheduled = false;  
                working_copy.ops[old_idx].start_time = 0; 
-               //progress_stack.pop();
                stack_pointer--;
-               //Layer previous_state = progress_stack.top();
                Layer previous_state = stack_array[stack_pointer -1];
                op_idx = previous_state.op_idx;
                thread_idx = previous_state.thread_idx + 1;
@@ -255,16 +239,22 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       for (std::size_t i = 0; i < working_copy.length(); ++i) {
          device_working_copy.ops[i] = working_copy[i];
       }
+      device_working_copy.length = working_copy.length();
 
-      #pragma omp target map(to: best_makespan,device_working_copy,usable_threads,sequential_makespan) map(from: result_sequence)
+      bool notrangpu = false;
+
+      #pragma omp target map(to: best_makespan,device_working_copy,usable_threads,sequential_makespan) map(from: result_sequence) map(tofrom :notrangpu)
       {
-        result_sequence = nonrecursive_schedule_op(best_makespan, device_working_copy, usable_threads, sequential_makespan);  
-        
+
+        notrangpu = !omp_is_initial_device();
+        if(notrangpu){
+            result_sequence = nonrecursive_schedule_op(best_makespan, device_working_copy, usable_threads, sequential_makespan);  
+        }
       } 
 
 
       
-      if(true){
+      if(!notrangpu){
         return 0;
       } else{
         best_makespan = result_sequence.best_makespan_output;
