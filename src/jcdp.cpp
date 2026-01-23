@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
       bnb_solver.print_stats();
       std::println(
            "Optimized cost (BnB + List scheduling): {}\n",
-           bnb_seq_list.best_makespan_output);
+           bnb_seq_list.makespan());
       std::println("{}", bnb_seq_list);
 
       // Solve via branch & bound
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
       std::chrono::duration<double> duration_bnb = end_bnb - start_bnb;
       std::println("\nBnB solve duration: {} seconds", duration_bnb.count());
       bnb_solver.print_stats();
-      std::println("Optimized cost (BnB): {}\n", bnb_seq.best_makespan_output);
+      std::println("Optimized cost (BnB): {}\n", bnb_seq.makespan());
       std::println("{}", bnb_seq);
 
       jcdp::util::write_dot(bnb_seq, "branch_and_bound");
@@ -169,8 +169,7 @@ int main(int argc, char* argv[]) {
         duration_bnb_gpu.count());
    bnb_solver.print_stats();
    std::println(
-        "Optimized cost (BnB + GPU sched): {}\n",
-        bnb_seq_gpu.best_makespan_output);
+        "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
    std::println("{}", bnb_seq_gpu);
 
    jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
@@ -186,7 +185,7 @@ int main(int argc, char* argv[]) {
       std::println("\nScheduling duration: {} seconds", duration_sched.count());
       std::println(
            "Optimized cost (DP + B&B GPU scheduling ): {}\n",
-           dp_seq.best_makespan_output);
+           dp_seq.makespan());
       std::println("{}", dp_seq);
    }
 
@@ -204,8 +203,7 @@ int main(int argc, char* argv[]) {
            "\nBnB Block solve duration: {} seconds",
            duration_bnb_block.count());
       bnb_block_solver.print_stats();
-      std::println(
-           "Optimized cost (BnB): {}\n", bnb_seq_block.best_makespan_output);
+      std::println("Optimized cost (BnB): {}\n", bnb_seq_block.makespan());
       std::println("{}", bnb_seq_block);
 
       jcdp::util::write_dot(bnb_seq_block, "branch_and_bound");
