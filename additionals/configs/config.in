@@ -1,4 +1,4 @@
-length 11
+length 5
 size_range 5 500
 dag_size_range 1000 100000
 available_threads 4

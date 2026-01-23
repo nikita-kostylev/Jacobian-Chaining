@@ -22,12 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "jcdp/deviceSequence.hpp"
 #include "jcdp/jacobian.hpp"
 #include "jcdp/jacobian_chain.hpp"
 #include "jcdp/operation.hpp"
 #include "jcdp/optimizer/optimizer.hpp"
-#include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/scheduler/bnb_block.hpp"
+#include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
 
@@ -79,7 +80,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          JacobianChain chain = m_chain;
          add_accumulation(sequence, chain, accs, eliminations);
       }
-      schedule_all_late();
+      schedule_all();
       return m_optimal_sequence;
    }
 
@@ -251,17 +252,23 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
 
       //GPU: #pragma omp target map(to:seqs[:n]) map(to:scheduler)
       //GPU: #pragma omp parallel for //firstprivate(scheduler)
-      // CPU: #pragma omp parallel for
+      //CPU: #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
-         const double time_to_schedule = remaining_time();
-         //const double time_to_schedule = 10;
+         //const double time_to_schedule = remaining_time();
+         const double time_to_schedule = 10;
+         DeviceSequence device_working_copy;
+
+         for (std::size_t j = 0; j < seqs[i].length(); ++j) {
+            device_working_copy.ops[j] = seq[i][j];
+         }
+         device_working_copy.length = seq[i].length();
 
          if (time_to_schedule) {
             //scheduler->set_timer(time_to_schedule);
 
             const std::size_t new_makespan = scheduler->schedule(
-                 seqs[i], m_usable_threads, m_makespan);
+                 device_working_copy, m_usable_threads, m_makespan);
 
             //m_timer_expired |= !scheduler->finished_in_time();
 
