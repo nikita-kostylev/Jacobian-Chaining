@@ -48,7 +48,7 @@ inline std::size_t device_sequential_makespan(const DeviceSequence& seq) {
    return cost;
 }
 
-inline std::size_t makespan(
+inline std::size_t device_makespan(
      const DeviceSequence& seq,
      std::size_t thread = static_cast<std::size_t>(-1)) {
    std::size_t cost = 0;

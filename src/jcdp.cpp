@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
       jcdp::util::write_dot(bnb_seq, "branch_and_bound");
    }
 
-   // Solve via branch & bound (GPU branch & bound scheduler)
+/*    // Solve via branch & bound (GPU branch & bound scheduler)
    bnb_solver.init(chain, bnb_s_g_p);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
    jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
         "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
    std::println("{}", bnb_seq_gpu);
 
-   jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
+   jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu"); */
 
    if (true) {
       // Schedule dynamic programming sequence via GPU branch & bound scheduling
