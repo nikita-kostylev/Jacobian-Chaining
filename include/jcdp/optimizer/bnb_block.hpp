@@ -31,7 +31,6 @@
 #include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
-
 #include "omp.h"
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>> HEADER CONTENTS <<<<<<<<<<<<<<<<<<<<<<<<<<<< //
@@ -50,9 +49,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
 
    virtual ~BnBBlockOptimizer() = default;
 
-   auto init(
-        const JacobianChain& chain,
-        scheduler::BnBBlockScheduler* sched) -> void {
+   auto init(const JacobianChain& chain, scheduler::Scheduler* sched) -> void {
       Optimizer::init(chain);
 
       m_scheduler = sched;
@@ -72,8 +69,8 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       start_timer();
       std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
 
-      #pragma omp parallel default(shared)
-      #pragma omp single
+#pragma omp parallel default(shared)
+#pragma omp single
       while (++accs <= m_length) {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
@@ -109,7 +106,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
    std::size_t m_leafs {0};
    std::vector<std::size_t> m_pruned_branches {};
    std::size_t m_updated_makespan {0};
-   scheduler::BnBBlockScheduler* m_scheduler;
+   scheduler::Scheduler* m_scheduler;
    std::vector<Sequence> sequences;
 
    using Optimizer::init;
@@ -139,8 +136,8 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          JacobianChain task_chain = chain;
          std::vector<OpPair> task_eliminations = eliminations;
 
-         #pragma omp task default(none) firstprivate(task_sequence)            \
-         firstprivate(task_chain, task_eliminations)
+#pragma omp task default(none) firstprivate(task_sequence)                     \
+     firstprivate(task_chain, task_eliminations)
          add_elimination(task_sequence, task_chain, task_eliminations);
       }
    }
@@ -160,8 +157,8 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          assert(!eliminations[elim_idx][0].has_value());
          assert(!eliminations[elim_idx][1].has_value());
 
-         // Instead of scheduling here, we gather the sequences together
-         #pragma omp critical
+// Instead of scheduling here, we gather the sequences together
+#pragma omp critical
          sequences.push_back(sequence);
          return;
       }
@@ -171,7 +168,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       if (lower_bound >= m_makespan || lower_bound > m_upper_bound) {
          std::size_t& prune_counter = m_pruned_branches[sequence.length()];
 
-         #pragma omp atomic
+#pragma omp atomic
          prune_counter++;
 
          return;
@@ -227,13 +224,14 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
     * Instead of scheduling everything here, the sequences are sent to the
     * scheduler to be taken care of.
     */
-   inline auto schedule_all_late() -> void {
-      std::println("To schedule: {}", sequences.size());
+   /*    inline auto schedule_all_late() -> void {
+         std::println("To schedule: {}", sequences.size());
 
-      int index = m_scheduler->schedule_gpu(sequences, m_usable_threads, m_makespan);
-      m_optimal_sequence = sequences[index];
-      m_makespan = m_optimal_sequence.makespan();
-   }
+         int index = m_scheduler->schedule_gpu(
+              sequences, m_usable_threads, m_makespan);
+         m_optimal_sequence = sequences[index];
+         m_makespan = m_optimal_sequence.makespan();
+      } */
 
    /*
     * This is the first attempt of block scheduling.
@@ -244,39 +242,33 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       std::println("To schedule: {}", sequences.size());
 
       // Cannot map std::vector
-      Sequence *seqs = &sequences[0];
+      Sequence* seqs = &sequences[0];
       std::size_t n = sequences.size();
 
       // need to map raw pointer
-      scheduler::BnBBlockScheduler* scheduler = &m_scheduler[0];
+      jscheduler::Scheduler* scheduler = &m_scheduler[0];
 
-      //GPU: #pragma omp target map(to:seqs[:n]) map(to:scheduler)
-      //GPU: #pragma omp parallel for //firstprivate(scheduler)
-      //CPU: #pragma omp parallel for
+      // GPU: #pragma omp target map(to:seqs[:n]) map(to:scheduler)
+      // GPU: #pragma omp parallel for //firstprivate(scheduler)
+      // CPU: #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
-         //const double time_to_schedule = remaining_time();
+         // const double time_to_schedule = remaining_time();
          const double time_to_schedule = 10;
-         DeviceSequence device_working_copy;
-
-         for (std::size_t j = 0; j < seqs[i].length(); ++j) {
-            device_working_copy.ops[j] = seqs[i][j];
-         }
-         device_working_copy.length = seqs[i].length();
 
          if (time_to_schedule) {
-            //scheduler->set_timer(time_to_schedule);
+            // scheduler->set_timer(time_to_schedule);
 
             const std::size_t new_makespan = scheduler->schedule(
                  device_working_copy, m_usable_threads, m_makespan);
 
-            //m_timer_expired |= !scheduler->finished_in_time();
+            // m_timer_expired |= !scheduler->finished_in_time();
 
-            #pragma omp atomic
+#pragma omp atomic
             m_leafs++;
 
             // No critical with gpu
-            //#pragma omp critical
+            // #pragma omp critical
 
             // This would be better done outside the for loop all at once
             if (m_makespan > new_makespan) {
