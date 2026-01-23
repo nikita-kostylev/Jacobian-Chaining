@@ -17,6 +17,7 @@
 #include <print>
 #include <vector>
 
+#include "jcdp/deviceSequence.hpp"
 #include "jcdp/operation.hpp"
 #include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/sequence.hpp"
@@ -25,116 +26,111 @@
 
 namespace jcdp::scheduler {
 
-
 // Method is not class member because of a problem when offloading.
 std::size_t lambda_schedule(
-      Sequence& sequence, std::size_t usable_threads,
-      Sequence& working_copy, std::size_t best_makespan,
-      std::size_t thread_loads[], const std::size_t lower_bound,
-      std::size_t sequential_makespan,
-      const std::size_t upper_bound = std::numeric_limits<std::size_t>::max()) {
+     Sequence& sequence, std::size_t usable_threads, Sequence& working_copy,
+     std::size_t best_makespan, std::size_t thread_loads[],
+     const std::size_t lower_bound, std::size_t sequential_makespan,
+     const std::size_t upper_bound = std::numeric_limits<std::size_t>::max()) {
 
-      std::size_t makespan = 0;
-      std::size_t idling_time = 0;
+   std::size_t makespan = 0;
+   std::size_t idling_time = 0;
 
-      if (lower_bound >= upper_bound) {
-         return lower_bound;
-      }
+   if (lower_bound >= upper_bound) {
+      return lower_bound;
+   }
 
+   auto schedule_op = [&](auto& schedule_next_op) -> bool {
+      // Problem with clock on gpu
+      // Return if time's up
+      // if (!remaining_time()) {
+      //   return true;
+      //}
 
-      auto schedule_op = [&](auto& schedule_next_op) -> bool {
-         // Problem with clock on gpu
-	       // Return if time's up
-         //if (!remaining_time()) {
-         //   return true;
-         //}
+      bool everything_scheduled = true;
+      for (std::size_t op_idx = 0; op_idx < sequence.length(); ++op_idx) {
 
-         bool everything_scheduled = true;
-         for (std::size_t op_idx = 0; op_idx < sequence.length(); ++op_idx) {
-
-	       if (working_copy[op_idx].is_scheduled) {
-               continue;
-            }
-
-            everything_scheduled = false;
-
-            if (!working_copy.is_schedulable(op_idx)) {
-               continue;
-            }
-
-            working_copy[op_idx].is_scheduled = true;
-            bool tried_empty_processor = false;
-	          const std::size_t start = working_copy.earliest_start(op_idx);
-
-            for (size_t t = 0; t < usable_threads; t++) {
-               // We only need to check one empty processor (w.l.o.g.)
-               if (thread_loads[t] == 0) {
-                  if (tried_empty_processor) {
-                     break;
-                  }
-                  tried_empty_processor = true;
-               }
-
-               const std::size_t old_start_time =
-                    working_copy[op_idx].start_time;
-               const std::size_t start_time = std::max(thread_loads[t], start);
-               working_copy[op_idx].start_time = start_time;
-
-               const std::size_t old_thread_load = thread_loads[t];
-               thread_loads[t] = start_time + sequence[op_idx].fma;
-
-               const std::size_t old_idling_time = idling_time;
-               idling_time += (start_time - old_thread_load);
-
-               const std::size_t old_makespan = makespan;
-               makespan = std::max(makespan, thread_loads[t]);
-
-               const std::size_t lb = std::max(
-                    ((idling_time + sequential_makespan) / usable_threads),
-                    working_copy.critical_path());
-
-	             if (std::max(lb, makespan) < best_makespan) {
-                  working_copy[op_idx].thread = t;
-
-	                // Problem here with recursive lambda expressions
-                  // Perform branching and exit if lower bound is reached
-                  if (schedule_next_op(schedule_next_op)) {
-                     return true;
-                  }
-               }
-
-               thread_loads[t] = old_thread_load;
-               idling_time = old_idling_time;
-               makespan = old_makespan;
-               working_copy[op_idx].start_time = old_start_time;
-
-            }
-
-            working_copy[op_idx].is_scheduled = false;
+         if (working_copy[op_idx].is_scheduled) {
+            continue;
          }
 
-         if (everything_scheduled) {
-            if (makespan < best_makespan) {
-               best_makespan = makespan;
-               for (size_t i = 0; i < sequence.length(); ++i) {
-                  sequence[i].thread = working_copy[i].thread;
-                  sequence[i].start_time = working_copy[i].start_time;
-                  sequence[i].is_scheduled = true;
+         everything_scheduled = false;
+
+         if (!working_copy.is_schedulable(op_idx)) {
+            continue;
+         }
+
+         working_copy[op_idx].is_scheduled = true;
+         bool tried_empty_processor = false;
+         const std::size_t start = working_copy.earliest_start(op_idx);
+
+         for (size_t t = 0; t < usable_threads; t++) {
+            // We only need to check one empty processor (w.l.o.g.)
+            if (thread_loads[t] == 0) {
+               if (tried_empty_processor) {
+                  break;
                }
-               if (best_makespan <= lower_bound) {
+               tried_empty_processor = true;
+            }
+
+            const std::size_t old_start_time = working_copy[op_idx].start_time;
+            const std::size_t start_time = std::max(thread_loads[t], start);
+            working_copy[op_idx].start_time = start_time;
+
+            const std::size_t old_thread_load = thread_loads[t];
+            thread_loads[t] = start_time + sequence[op_idx].fma;
+
+            const std::size_t old_idling_time = idling_time;
+            idling_time += (start_time - old_thread_load);
+
+            const std::size_t old_makespan = makespan;
+            makespan = std::max(makespan, thread_loads[t]);
+
+            const std::size_t lb = std::max(
+                 ((idling_time + sequential_makespan) / usable_threads),
+                 working_copy.critical_path());
+
+            if (std::max(lb, makespan) < best_makespan) {
+               working_copy[op_idx].thread = t;
+
+               // Problem here with recursive lambda expressions
+               // Perform branching and exit if lower bound is reached
+               if (schedule_next_op(schedule_next_op)) {
                   return true;
                }
             }
+
+            thread_loads[t] = old_thread_load;
+            idling_time = old_idling_time;
+            makespan = old_makespan;
+            working_copy[op_idx].start_time = old_start_time;
          }
 
-         return false;
-      };
+         working_copy[op_idx].is_scheduled = false;
+      }
 
-      schedule_op(schedule_op);
-      return best_makespan;
-   }
+      if (everything_scheduled) {
+         if (makespan < best_makespan) {
+            best_makespan = makespan;
+            for (size_t i = 0; i < sequence.length(); ++i) {
+               sequence[i].thread = working_copy[i].thread;
+               sequence[i].start_time = working_copy[i].start_time;
+               sequence[i].is_scheduled = true;
+            }
+            if (best_makespan <= lower_bound) {
+               return true;
+            }
+         }
+      }
 
-class BnBBlockScheduler {//: public util::Timer{
+      return false;
+   };
+
+   schedule_op(schedule_op);
+   return best_makespan;
+}
+
+class BnBBlockScheduler {  //: public util::Timer{
  public:
    BnBBlockScheduler() = default;
    ~BnBBlockScheduler() = default;
@@ -145,8 +141,9 @@ class BnBBlockScheduler {//: public util::Timer{
     * scheduling.
     */
    std::size_t schedule_gpu(
-      std::vector<Sequence>& sequences, const std::size_t threads,
-      const std::size_t upper_bound = std::numeric_limits<std::size_t>::max()) {
+        std::vector<Sequence>& sequences, const std::size_t threads,
+        const std::size_t upper_bound =
+             std::numeric_limits<std::size_t>::max()) {
 
       // Prepare data for block scheduling
       std::vector<std::size_t> vec_usable_threads(sequences.size());
@@ -158,18 +155,18 @@ class BnBBlockScheduler {//: public util::Timer{
       std::vector<std::size_t> results(sequences.size());
       std::size_t n = sequences.size();
 
-      //#pragma omp target
-      //#pragma omp parallel for
+      // #pragma omp target
+      // #pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
-	       std::size_t usable_threads = sequences[i].count_accumulations();
+         std::size_t usable_threads = sequences[i].count_accumulations();
          if (threads > 0 && threads < usable_threads) {
             usable_threads = threads;
          }
          vec_usable_threads[i] = usable_threads;
-	       vec_sequential_makespan[i] = sequences[i].sequential_makespan();
+         vec_sequential_makespan[i] = sequences[i].sequential_makespan();
          vec_working_copy[i] = sequences[i];
          vec_best_makespan[i] = upper_bound;
-         //vec_thread_loads[i] = std::vector<std::size_t>(usable_threads, 0);
+         // vec_thread_loads[i] = std::vector<std::size_t>(usable_threads, 0);
 
          for (Operation& op : vec_working_copy[i]) {
             op.is_scheduled = false;
@@ -177,9 +174,9 @@ class BnBBlockScheduler {//: public util::Timer{
 
          vec_lower_bound[i] = vec_working_copy[i].critical_path();
       }
-      
-      Sequence* seqs = &sequences[0]; 
-      std::size_t* ut = &vec_usable_threads[0]; 
+
+      Sequence* seqs = &sequences[0];
+      std::size_t* ut = &vec_usable_threads[0];
       std::size_t* sms = &vec_sequential_makespan[0];
       Sequence* wc = &vec_working_copy[0];
       std::size_t* bms = &vec_best_makespan[0];
@@ -190,12 +187,12 @@ class BnBBlockScheduler {//: public util::Timer{
       /*
        * Here we schedule all the sequences at once in the second attempt.
        */
-      //SKIP WARNING FOR MVP#pragma omp target map(to :seqs[:n], ut[:n], sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n])
-      //SKIP WARNING FOR MVP#pragma omp parallel for
+      // SKIP WARNING FOR MVP#pragma omp target map(to :seqs[:n], ut[:n],
+      // sms[:n], wc[:n], bms[:n], lbs[:n]) map(r[:n], tl[:n]) SKIP WARNING FOR
+      // MVP#pragma omp parallel for
       for (std::size_t i = 0; i < n; i++) {
-         r[i] = lambda_schedule(seqs[i], ut[i],
-            wc[i], bms[i], tl,
-            lbs[i], sms[i], upper_bound);
+         r[i] = lambda_schedule(
+              seqs[i], ut[i], wc[i], bms[i], tl, lbs[i], sms[i], upper_bound);
       }
 
       int index = 0;
@@ -211,7 +208,8 @@ class BnBBlockScheduler {//: public util::Timer{
 
    std::size_t schedule(
         Sequence& sequence, const std::size_t threads,
-        const std::size_t upper_bound = std::numeric_limits<std::size_t>::max()) {
+        const std::size_t upper_bound =
+             std::numeric_limits<std::size_t>::max()) {
 
       // We can never use more threads than we have accumulations
       std::size_t usable_threads = sequence.count_accumulations();
@@ -247,7 +245,7 @@ class BnBBlockScheduler {//: public util::Timer{
 
       auto schedule_op = [&](auto& schedule_next_op) -> bool {
          // Return if time's up
-         //if (!remaining_time()) {
+         // if (!remaining_time()) {
          //   return true;
          //}
 

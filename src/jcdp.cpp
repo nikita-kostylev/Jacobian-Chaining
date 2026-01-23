@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
 
    // Solve via branch & bound block
    if (true) {  // disabled, as we only test simple solution
-      bnb_block_solver.init(chain, bnb_b_s_p);
+      bnb_block_solver.init(chain, bnb_s_g_p);
       // remove FOR MVP
       // bnb_block_solver.set_upper_bound(bnb_seq_list.makespan());
       auto start_bnb_block = std::chrono::high_resolution_clock::now();

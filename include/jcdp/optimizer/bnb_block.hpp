@@ -260,9 +260,9 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
          DeviceSequence device_working_copy;
 
          for (std::size_t j = 0; j < seqs[i].length(); ++j) {
-            device_working_copy.ops[j] = seq[i][j];
+            device_working_copy.ops[j] = seqs[i][j];
          }
-         device_working_copy.length = seq[i].length();
+         device_working_copy.length = seqs[i].length();
 
          if (time_to_schedule) {
             //scheduler->set_timer(time_to_schedule);
