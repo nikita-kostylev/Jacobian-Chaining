@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
       jcdp::util::write_dot(bnb_seq, "branch_and_bound");
    }
 
-/*    // Solve via branch & bound (GPU branch & bound scheduler)
+   // Solve via branch & bound (GPU branch & bound scheduler)
    bnb_solver.init(chain, bnb_s_g_p);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
    jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
@@ -169,10 +169,11 @@ int main(int argc, char* argv[]) {
         duration_bnb_gpu.count());
    bnb_solver.print_stats();
    std::println(
-        "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
+        "Optimized cost (BnB + GPU sched): {}\n",
+        bnb_seq_gpu.best_makespan_output);
    std::println("{}", bnb_seq_gpu);
 
-   jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu"); */
+   jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
 
    if (true) {
       // Schedule dynamic programming sequence via GPU branch & bound scheduling
@@ -185,7 +186,7 @@ int main(int argc, char* argv[]) {
       std::println("\nScheduling duration: {} seconds", duration_sched.count());
       std::println(
            "Optimized cost (DP + B&B GPU scheduling ): {}\n",
-           dp_seq.makespan());
+           dp_seq.best_makespan_output);
       std::println("{}", dp_seq);
    }
 
@@ -203,7 +204,8 @@ int main(int argc, char* argv[]) {
            "\nBnB Block solve duration: {} seconds",
            duration_bnb_block.count());
       bnb_block_solver.print_stats();
-      std::println("Optimized cost (BnB): {}\n", bnb_seq_block.makespan());
+      std::println(
+           "Optimized cost (BnB): {}\n", bnb_seq_block.best_makespan_output);
       std::println("{}", bnb_seq_block);
 
       jcdp::util::write_dot(bnb_seq_block, "branch_and_bound");
