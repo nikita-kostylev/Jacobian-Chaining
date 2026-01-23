@@ -246,7 +246,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       std::size_t n = sequences.size();
 
       // need to map raw pointer
-      jscheduler::Scheduler* scheduler = &m_scheduler[0];
+      scheduler::Scheduler* scheduler = &m_scheduler[0];
 
       // GPU: #pragma omp target map(to:seqs[:n]) map(to:scheduler)
       // GPU: #pragma omp parallel for //firstprivate(scheduler)
@@ -260,7 +260,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
             // scheduler->set_timer(time_to_schedule);
 
             const std::size_t new_makespan = scheduler->schedule(
-                 device_working_copy, m_usable_threads, m_makespan);
+                 seqs[i], m_usable_threads, m_makespan);
 
             // m_timer_expired |= !scheduler->finished_in_time();
 
