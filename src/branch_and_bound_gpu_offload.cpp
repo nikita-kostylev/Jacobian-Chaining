@@ -287,12 +287,12 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    if (!notrangpu) {
       return 0;
    } else {
-      best_makespan = result_sequence.best_makespan_output; /*
-       for (size_t i = 0; i < sequence.length(); ++i) {
-          sequence[i].thread = result_sequence.ops[i].thread;
-          sequence[i].start_time = result_sequence.ops[i].start_time;
-          sequence[i].is_scheduled = true;
-       }*/
+      best_makespan = result_sequence.best_makespan_output;
+      for (size_t i = 0; i < sequence.length(); ++i) {
+         sequence[i].thread = result_sequence.ops[i].thread;
+         sequence[i].start_time = result_sequence.ops[i].start_time;
+         sequence[i].is_scheduled = true;
+      }
       return best_makespan;
    }
 }

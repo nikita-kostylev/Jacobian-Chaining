@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
       bnb_solver.print_stats();
       std::println(
            "Optimized cost (BnB + List scheduling): {}\n",
-           bnb_seq_list.makespan());
+           bnb_seq_list.best_makespan_output);
       std::println("{}", bnb_seq_list);
 
       // Solve via branch & bound
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
       std::chrono::duration<double> duration_bnb = end_bnb - start_bnb;
       std::println("\nBnB solve duration: {} seconds", duration_bnb.count());
       bnb_solver.print_stats();
-      std::println("Optimized cost (BnB): {}\n", bnb_seq.makespan());
+      std::println("Optimized cost (BnB): {}\n", bnb_seq.best_makespan_output);
       std::println("{}", bnb_seq);
 
       jcdp::util::write_dot(bnb_seq, "branch_and_bound");
