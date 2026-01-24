@@ -168,8 +168,8 @@ int main(int argc, char* argv[]) {
         "\nBnB (GPU sched) solve duration: {} seconds",
         duration_bnb_gpu.count());
    bnb_solver.print_stats();
-   std::println(
-        "Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
+   // std::println(
+   //"Optimized cost (BnB + GPU sched): {}\n", bnb_seq_gpu.makespan());
    std::println("{}", bnb_seq_gpu);
 
    jcdp::util::write_dot(bnb_seq_gpu, "branch_and_bound_gpu");
