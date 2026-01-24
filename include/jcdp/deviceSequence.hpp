@@ -9,7 +9,7 @@ namespace jcdp {
 
 /* ========================= CONFIGURATION ========================= */
 
-constexpr int MAX_SEQUENCE_LENGTH = 40;  // FIXED FOR LIMITED TESTING. SHOULD BE
+constexpr int MAX_SEQUENCE_LENGTH = 10;  // FIXED FOR LIMITED TESTING. SHOULD BE
                                          // ADJUSTABLE
 
 /* ========================= DEVICE SEQUENCE ======================== */
