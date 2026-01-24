@@ -784,6 +784,8 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    // Reset potential previous schedule
    for (Operation& op : working_copy) {
       op.is_scheduled = false;
+      op.thread = 0;
+      op.start_time = 0;
    }
 
    const std::size_t lower_bound = working_copy.critical_path();
