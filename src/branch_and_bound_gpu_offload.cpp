@@ -462,12 +462,12 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.is_scheduled = false;
    }
 
-   std::println("before");
+   /* std::println("before");
 
    for (size_t i = 0; i < sequence.length(); i++) {
       std::println(
            "operation {} is_scheduled: {}", i, sequence[i].is_scheduled);
-   }
+   } */
 
    const std::size_t lower_bound = sequence.critical_path();
 
@@ -516,16 +516,17 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       for (size_t i = 0; i < sequence.length(); ++i) {
          sequence[i].thread = result_sequence.ops[i].thread;
          sequence[i].start_time = result_sequence.ops[i].start_time;
-         // sequence[i].is_scheduled = true;  // it is not supposed to be here
+         sequence[i].is_scheduled =
+              result_sequence.ops[i].is_scheduled;  // it is not supposed to be
+                                                    // here
       }
 
-      std::println("after");
-
+      /* std::println("after");
       for (size_t i = 0; i < sequence.length(); i++) {
          std::println(
               "operation {} is_scheduled: {}", i,
               result_sequence.ops[i].is_scheduled);
-      }
+      } */
 
       return best_makespan;
    }
