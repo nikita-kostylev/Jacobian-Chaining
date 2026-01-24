@@ -101,7 +101,7 @@ inline bool is_scheduled(const DeviceSequence& seq) {
 
 inline bool is_schedulable(const DeviceSequence& seq, std::size_t op_idx) {
    for (std::size_t i = 0; i < seq.length; ++i) {
-      if (seq.ops[op_idx] > seq.ops[i]) {
+      if (seq.ops[op_idx] < seq.ops[i]) {
          if (!seq.ops[i].is_scheduled) {
             return false;
          }
