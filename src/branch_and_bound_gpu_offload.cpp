@@ -31,6 +31,14 @@ struct Layer {
                                                             // size.
 };
 
+inline bool all_scheduled(const DeviceSequence& seq) {
+   for (size_t i = 0; i < seq.length; ++i) {
+      if (!seq.ops[i].is_scheduled)
+         return false;
+   }
+   return true;
+}
+
 #pragma omp declare target
 
 static DeviceSequence nonrecursive_schedule_op(
@@ -129,7 +137,8 @@ static DeviceSequence nonrecursive_schedule_op(
       working_copy.ops[op_idx].thread = thread_idx;
 
       // Reached a leaf node, update best_makestpan if necessary
-      if (depth >= working_copy.length - 1) {
+      // depth >= working_copy.length - 1 was condition previously
+      if (all_scheduled(working_copy)) {
          if (makespan < best_makespan) {
             best_makespan = makespan;
             for (size_t i = 0; i < working_copy.length; ++i) {
