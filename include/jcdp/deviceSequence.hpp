@@ -101,7 +101,7 @@ inline bool is_scheduled(const DeviceSequence& seq) {
 
 inline bool is_schedulable(const DeviceSequence& seq, std::size_t op_idx) {
    for (std::size_t i = 0; i < seq.length; ++i) {
-      if (seq.ops[op_idx] < seq.ops[i]) {
+      if (seq.ops[op_idx] > seq.ops[i]) {
          if (!seq.ops[i].is_scheduled) {
             return false;
          }
@@ -129,6 +129,16 @@ inline std::size_t earliest_start(
 
 /* ------------------ Critical Path --------------------------------- */
 
+inline std::size_t device_parent(
+     const DeviceSequence& seq, std::size_t op_idx) {
+   for (std::size_t i = 0; i < seq.length; ++i) {
+      if (seq.ops[i] < seq.ops[op_idx]) {
+         return i;
+      }
+   }
+   return SIZE_MAX;
+}
+
 inline std::size_t device_critical_path(const DeviceSequence& seq) {
 
    std::size_t max_cp = 0;
@@ -136,29 +146,18 @@ inline std::size_t device_critical_path(const DeviceSequence& seq) {
    for (std::size_t i = 0; i < seq.length; ++i) {
 
       std::size_t time = seq.ops[i].start_time + seq.ops[i].fma;
-
       std::size_t current = i;
 
       while (true) {
-         bool found_parent = false;
-
-         for (std::size_t j = 0; j < seq.length; ++j) {
-            if (seq.ops[j] < seq.ops[current]) {
-               const std::size_t parent_end = seq.ops[j].start_time +
-                                              seq.ops[j].fma;
-
-               if (parent_end > time) {
-                  time = parent_end;
-               }
-
-               current = j;
-               found_parent = true;
-               break;
-            }
-         }
-
-         if (!found_parent)
+         std::size_t p = device_parent(seq, current);
+         if (p == SIZE_MAX)
             break;
+
+         std::size_t parent_end = seq.ops[p].start_time + seq.ops[p].fma;
+         if (parent_end > time)
+            time = parent_end;
+
+         current = p;
       }
 
       if (time > max_cp) {
@@ -168,7 +167,6 @@ inline std::size_t device_critical_path(const DeviceSequence& seq) {
 
    return max_cp;
 }
-
 // #pragma omp end declare target
 
 }  // namespace jcdp
