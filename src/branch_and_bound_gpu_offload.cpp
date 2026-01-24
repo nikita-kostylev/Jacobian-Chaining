@@ -675,7 +675,7 @@ static DeviceSequence nonrecursive_schedule_op(
 
       // Reached a leaf node, update best_makestpan if necessary
       // depth >= working_copy.length - 1
-      if (all_scheduled) {
+      if (all_scheduled(working_copy)) {
          if (makespan < best_makespan) {
             best_makespan = makespan;
             for (size_t i = 0; i < working_copy.length; ++i) {
