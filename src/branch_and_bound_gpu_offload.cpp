@@ -65,9 +65,9 @@ static DeviceSequence nonrecursive_schedule_op(
    std::size_t depth = 0;
    DeviceSequence sequence = working_copy;
 
-   for (size_t i = 0; i < working_copy.length; ++i) {
+   /* for (size_t i = 0; i < working_copy.length; ++i) {
       working_copy.ops[i].is_scheduled = false;
-   }
+   } */
 
    for (std::size_t op_idx_temp = 0; op_idx_temp < working_copy.length;
         ++op_idx_temp) {
@@ -454,15 +454,15 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    std::size_t sequential_makespan = sequence.sequential_makespan();
 
-   Sequence working_copy = sequence;
+   //Sequence working_copy = sequence;
    std::size_t best_makespan = upper_bound;
 
    // Reset potential previous schedule
-   for (Operation& op : working_copy) {
+   for (Operation& op : sequence) {
       op.is_scheduled = false;
    }
 
-   const std::size_t lower_bound = working_copy.critical_path();
+   const std::size_t lower_bound = sequence.critical_path();
 
    if (lower_bound >= upper_bound) {
       return lower_bound;
@@ -480,10 +480,10 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    DeviceSequence result_sequence;
    DeviceSequence device_working_copy;
 
-   for (std::size_t i = 0; i < working_copy.length(); ++i) {
-      device_working_copy.ops[i] = working_copy[i];
+   for (std::size_t i = 0; i < sequence.length(); ++i) {
+      device_working_copy.ops[i] = sequence[i];
    }
-   device_working_copy.length = working_copy.length();
+   device_working_copy.length = sequence.length();
 
    // run code on GPU
    bool notrangpu = false;
@@ -509,8 +509,10 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       for (size_t i = 0; i < sequence.length(); ++i) {
          sequence[i].thread = result_sequence.ops[i].thread;
          sequence[i].start_time = result_sequence.ops[i].start_time;
-         sequence[i].is_scheduled = true;  // it is not supposed to be here
+         //sequence[i].is_scheduled = true;  // it is not supposed to be here
       }
+
+      std::println("{}", sequence);
 
       return best_makespan;
    }
