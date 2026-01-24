@@ -257,8 +257,8 @@ static DeviceSequence nonrecursive_schedule_op(
 
    DeviceSequence best_sequence = working_copy;  // FIX
 
-   for (size_t i = 0; i < sequence.length; ++i) {
-      sequence.ops[i].is_scheduled = false;
+   for (size_t i = 0; i < best_sequence.length; ++i) {
+      best_sequence.ops[i].is_scheduled = false;
    }
    best_sequence.best_makespan_output = best_makespan;
 
