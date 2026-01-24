@@ -466,7 +466,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    for (size_t i = 0; i < sequence.length(); i++) {
       std::println(
-           "operation {} is_scheduled: {}", i, sequence.ops[i].is_scheduled);
+           "operation {} is_scheduled: {}", i, sequence[i].is_scheduled);
    }
 
    const std::size_t lower_bound = sequence.critical_path();
