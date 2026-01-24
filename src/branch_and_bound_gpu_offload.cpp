@@ -291,7 +291,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
              for (size_t i = 0; i < sequence.length(); ++i) {
                sequence[i].thread = result_sequence.ops[i].thread;
                sequence[i].start_time = result_sequence.ops[i].start_time;
-               sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled; // it is not supposed to be here
+               sequence[i].is_scheduled = true; // it is not supposed to be here
             }
        
       return best_makespan;
