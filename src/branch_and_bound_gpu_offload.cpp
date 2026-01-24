@@ -521,12 +521,12 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
                                                     // here
       }
 
-      /* std::println("after");
+      std::println("after");
       for (size_t i = 0; i < sequence.length(); i++) {
          std::println(
               "operation {} is_scheduled: {}", i,
               result_sequence.ops[i].is_scheduled);
-      } */
+      }
 
       return best_makespan;
    }
