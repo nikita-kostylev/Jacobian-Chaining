@@ -31,13 +31,13 @@ struct Layer {
                                                             // size.
 };
 
-/* #pragma omp declare target
+#pragma omp declare target
 
 static DeviceSequence nonrecursive_schedule_op(
      std::size_t& best_makespan, DeviceSequence& working_copy,
      const std::size_t usable_threads, const std::size_t sequential_makespan) {
 
-   std::array<std::size_t, 20> thread_loads {};  // Value has to be fixed for
+   std::array<std::size_t, 40> thread_loads {};  // Value has to be fixed for
                                                  // GPU. Selected smaller value,
                                                  // to reduce size.
    thread_loads.fill(0);
@@ -45,8 +45,8 @@ static DeviceSequence nonrecursive_schedule_op(
    std::size_t makespan = 0;
    std::size_t idling_time = 0;
 
-   Layer stack_array[20];  // Value has to be fixed for GPU. Selected smaller
-                           // value, to reduce size.
+   Layer stack_array[200];  // Value has to be fixed for GPU. Selected smaller
+                            // value, to reduce size.
    std::size_t stack_pointer = 0;
    bool revert_depth = false;
    bool revert_op_idx = false;
@@ -56,6 +56,10 @@ static DeviceSequence nonrecursive_schedule_op(
    std::size_t thread_idx = 0;
    std::size_t depth = 0;
    DeviceSequence sequence = working_copy;
+
+   for (size_t i = 0; i < working_copy.length; ++i) {
+      working_copy.ops[i].is_scheduled = false;
+   }
 
    for (std::size_t op_idx_temp = 0; op_idx_temp < working_copy.length;
         ++op_idx_temp) {
@@ -229,9 +233,8 @@ static DeviceSequence nonrecursive_schedule_op(
 };
 
 #pragma omp end declare target
- */
 
-#pragma omp declare target
+/* #pragma omp declare target
 
 static DeviceSequence nonrecursive_schedule_op(
      std::size_t& best_makespan, DeviceSequence& working_copy,
@@ -435,7 +438,7 @@ static DeviceSequence nonrecursive_schedule_op(
 }
 
 #pragma omp end declare target
-
+ */
 auto BranchAndBoundSchedulerGPU::schedule_impl(
      Sequence& sequence, const std::size_t usable_threads,
      const std::size_t upper_bound) -> std::size_t {
