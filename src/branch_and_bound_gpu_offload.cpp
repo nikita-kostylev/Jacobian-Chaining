@@ -566,7 +566,7 @@ struct Layer {
    time_t idletime = 0;
    size_t makespan = 0;
 
-   std::array<std::size_t, 40> thread_loads_full_array {};  // Value has to be
+   std::array<std::size_t, 50> thread_loads_full_array {};  // Value has to be
                                                             // fixed for GPU.
                                                             // Selected smaller
                                                             // value, to reduce
@@ -579,7 +579,7 @@ static DeviceSequence nonrecursive_schedule_op(
      std::size_t& best_makespan, DeviceSequence& working_copy,
      const std::size_t usable_threads, const std::size_t sequential_makespan) {
 
-   std::array<std::size_t, 40> thread_loads {};  // Value has to be fixed for
+   std::array<std::size_t, 50> thread_loads {};  // Value has to be fixed for
                                                  // GPU. Selected smaller value,
                                                  // to reduce size.
    thread_loads.fill(0);
@@ -587,7 +587,7 @@ static DeviceSequence nonrecursive_schedule_op(
    std::size_t makespan = 0;
    std::size_t idling_time = 0;
 
-   Layer stack_array[200];  // Value has to be fixed for GPU. Selected smaller
+   Layer stack_array[400];  // Value has to be fixed for GPU. Selected smaller
                             // value, to reduce size.
    std::size_t stack_pointer = 0;
    bool revert_depth = false;
