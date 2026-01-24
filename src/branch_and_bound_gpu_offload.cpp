@@ -256,6 +256,10 @@ static DeviceSequence nonrecursive_schedule_op(
    std::size_t depth = 0;
 
    DeviceSequence best_sequence = working_copy;  // FIX
+
+   for (size_t i = 0; i < sequence.length; ++i) {
+      sequence.ops[i].is_scheduled = false;
+   }
    best_sequence.best_makespan_output = best_makespan;
 
    // Count already scheduled ops
