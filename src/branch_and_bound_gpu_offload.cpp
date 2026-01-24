@@ -573,7 +573,7 @@ struct Layer {
                                                             // size.
 };
 
-/* inline bool all_scheduled(const DeviceSequence& seq) {
+inline bool all_scheduled(const DeviceSequence& seq) {
    for (size_t i = 0; i < seq.length; ++i) {
       if (!seq.ops[i].is_scheduled)
          return false;
@@ -581,6 +581,7 @@ struct Layer {
    return true;
 }
 
+/*
 #pragma omp declare target
 
 static DeviceSequence nonrecursive_schedule_op(
@@ -816,12 +817,16 @@ static DeviceSequence nonrecursive_schedule_op(
 
       // ===== LEAF NODE =====
       if (op_idx >= working_copy.length) {
-         if (makespan < best_makespan) {
-            best_makespan = makespan;
-            for (std::size_t i = 0; i < working_copy.length; ++i) {
-               best_sequence.ops[i] = working_copy.ops[i];
+         // THIS IS THE MISSING SEMANTIC CHECK
+         if (all_scheduled(working_copy)) {
+            if (makespan < best_makespan) {
+               best_makespan = makespan;
+               for (std::size_t i = 0; i < working_copy.length; ++i) {
+                  best_sequence.ops[i] = working_copy.ops[i];
+                  best_sequence.ops[i].is_scheduled = true;
+               }
+               best_sequence.best_makespan_output = best_makespan;
             }
-            best_sequence.best_makespan_output = best_makespan;
          }
 
          // BACKTRACK
