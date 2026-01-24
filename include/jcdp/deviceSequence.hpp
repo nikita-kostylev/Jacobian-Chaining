@@ -182,8 +182,9 @@ struct std::formatter<jcdp::DeviceSequence> {
       return ctx.begin();
    }
 
-   template<class FormatContext>
-   auto format(const jcdp::DeviceSequence& seq, FormatContext& ctx) {
+   template<class FmtContext>
+   auto format(const jcdp::DeviceSequence& seq, FmtContext& ctx)
+        -> FmtContext::iterator {
       typename FmtContext::iterator out = ctx.out();
       for (const jcdp::Operation& op : seq.ops) {
          out = std::format_to(out, "{}\n", op);
