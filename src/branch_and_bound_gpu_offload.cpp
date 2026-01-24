@@ -465,12 +465,13 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.start_time = 0;
    }
 
-   /* std::println("before");
+   std::println("before");
 
    for (size_t i = 0; i < sequence.length(); i++) {
       std::println(
-           "operation {} is_scheduled: {}", i, sequence[i].is_scheduled);
-   } */
+           "1. if operation {} is_scheduled: {} and 2. if its start time {}", i,
+           sequence[i].is_scheduled, sequence[i].start_time);
+   }
 
    const std::size_t lower_bound = sequence.critical_path();
 
