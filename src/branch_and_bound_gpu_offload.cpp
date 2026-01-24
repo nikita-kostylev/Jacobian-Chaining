@@ -966,6 +966,8 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    // Return gpu output with catch if gpu offload failed
    if (!notrangpu) {
+      std::println("{}", result_sequence);
+      std::println("{}", usable_threads);
       return 0;
    } else {
       best_makespan = result_sequence.best_makespan_output;
@@ -982,6 +984,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       }
 
       std::println("{}", result_sequence);
+      std::println("{}", usable_threads);
       return best_makespan;
    }
 }
