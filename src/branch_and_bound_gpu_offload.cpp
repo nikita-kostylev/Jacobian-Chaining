@@ -619,11 +619,11 @@ static DeviceSequence nonrecursive_schedule_op(
    stack_array[stack_pointer++] = initial_layer;
 
    int timer_replacement = 0;
-   while (timer_replacement < 10000000) {  // Rudementary replacement for timer.
-                                           // Could be changed into either input
-                                           // value to binary or some estimation
-                                           // value(some mapping from dp
-                                           // duration to gpu iterations)
+   while (timer_replacement < 50000) {  // Rudementary replacement for timer.
+                                        // Could be changed into either input
+                                        // value to binary or some estimation
+                                        // value(some mapping from dp
+                                        // duration to gpu iterations)
       timer_replacement++;
 
       if (op_idx >= working_copy.length && depth == 0) {
