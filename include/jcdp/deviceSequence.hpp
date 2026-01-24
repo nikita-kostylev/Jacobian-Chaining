@@ -9,7 +9,8 @@ namespace jcdp {
 
 /* ========================= CONFIGURATION ========================= */
 
-constexpr int MAX_SEQUENCE_LENGTH = 40; // FIXED FOR LIMITED TESTING. SHOULD BE ADJUSTABLE
+constexpr int MAX_SEQUENCE_LENGTH = 40;  // FIXED FOR LIMITED TESTING. SHOULD BE
+                                         // ADJUSTABLE
 
 /* ========================= DEVICE SEQUENCE ======================== */
 
@@ -170,22 +171,22 @@ inline std::size_t device_critical_path(const DeviceSequence& seq) {
    return max_cp;
 }
 
-//#pragma omp end declare target
+// #pragma omp end declare target
 
 }  // namespace jcdp
 
 template<>
 struct std::formatter<jcdp::DeviceSequence> {
    template<class ParseContext>
-   constexpr auto parse(ParseContext& ctx) {
+   constexpr auto parse(ParseContext& ctx) -> ParseContext::iterator {
       return ctx.begin();
    }
 
    template<class FormatContext>
    auto format(const jcdp::DeviceSequence& seq, FormatContext& ctx) {
-      auto out = ctx.out();
-      for (std::size_t i = 0; i < seq.length; ++i) {
-         out = std::format_to(out, "{}\n", seq.ops[i]);
+      typename FmtContext::iterator out = ctx.out();
+      for (const jcdp::Operation& op : seq.ops) {
+         out = std::format_to(out, "{}\n", op);
       }
       return out;
    }

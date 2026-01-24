@@ -147,7 +147,7 @@ class Sequence : public std::deque<Operation> {
          if (this[0][op_idx] < this[0][i]) {
             time = this[0][i].start_time + this[0][i].fma;
          }
-         if (time > max ) {
+         if (time > max) {
             max = time;
          }
          time = 0;
@@ -203,9 +203,10 @@ class Sequence : public std::deque<Operation> {
    }
 
    inline static auto make_max() -> Sequence {
-      return Sequence(Operation {
-           .fma = std::numeric_limits<std::size_t>::max(),
-           .is_scheduled = true});
+      return Sequence(
+           Operation {
+                .fma = std::numeric_limits<std::size_t>::max(),
+                .is_scheduled = true});
    }
 };
 
