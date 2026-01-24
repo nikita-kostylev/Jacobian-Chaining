@@ -925,6 +925,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.start_time = 0;
    }
 
+   std::println("{}", sequence);
+   std::println("usable threads: {}", usable_threads);
+
    const std::size_t lower_bound = sequence.critical_path();
 
    if (lower_bound >= upper_bound) {
@@ -966,7 +969,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    // Return gpu output with catch if gpu offload failed
    if (!notrangpu) {
-      std::println("{}", result_sequence);
+      std::println("{}", sequence);
       std::println("{}", usable_threads);
       return 0;
    } else {
