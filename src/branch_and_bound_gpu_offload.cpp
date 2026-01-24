@@ -24,7 +24,7 @@ struct Layer {
    size_t idletime = 0;
    size_t makespan = 0;
 
-   std::array<std::size_t, 20> thread_loads_full_array {};  // Value has to be
+   std::array<std::size_t, 40> thread_loads_full_array {};  // Value has to be
                                                             // fixed for GPU.
                                                             // Selected smaller
                                                             // value, to reduce
