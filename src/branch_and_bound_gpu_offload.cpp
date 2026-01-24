@@ -515,9 +515,11 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       for (size_t i = 0; i < sequence.length(); i++) {
          std::println(
               "operation {} is_scheduled: {}", i,
-              result_sequence.ops[i].is_scheduled);
-         return best_makespan;
+              static_cast<int>(result_sequence.ops[i].is_scheduled));
       }
+
+      return best_makespan;
    }
+}
 
 }  // namespace jcdp::scheduler
