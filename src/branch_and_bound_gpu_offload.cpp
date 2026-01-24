@@ -573,7 +573,7 @@ struct Layer {
                                                             // size.
 };
 
-inline bool all_scheduled(const DeviceSequence& seq) {
+/* inline bool all_scheduled(const DeviceSequence& seq) {
    for (size_t i = 0; i < seq.length; ++i) {
       if (!seq.ops[i].is_scheduled)
          return false;
@@ -779,7 +779,128 @@ static DeviceSequence nonrecursive_schedule_op(
    return sequence;
 };
 
-#pragma omp end declare target
+#pragma omp end declare target */
+
+#pragma omp declare target
+
+static DeviceSequence nonrecursive_schedule_op(
+     std::size_t& best_makespan, DeviceSequence& working_copy,
+     const std::size_t usable_threads, const std::size_t sequential_makespan) {
+   std::array<std::size_t, 50> thread_loads {};
+   thread_loads.fill(0);
+
+   std::size_t makespan = 0;
+   std::size_t idling_time = 0;
+
+   Layer stack[400];
+   std::size_t sp = 0;  // stack pointer = recursion depth
+
+   DeviceSequence best_sequence = working_copy;
+
+   // ---- initialize root frame ----
+   stack[0] = Layer {};
+   stack[0].op_idx = 0;
+   stack[0].thread_idx = 0;
+   stack[0].depth = 0;
+   stack[0].thread_loads_full_array = thread_loads;
+
+   while (true) {
+
+      // ===== FIND NEXT UNSCHEDULED SCHEDULABLE OP =====
+      std::size_t op_idx = stack[sp].op_idx;
+      while (op_idx < working_copy.length &&
+             (working_copy.ops[op_idx].is_scheduled ||
+              !is_schedulable(working_copy, op_idx))) {
+         op_idx++;
+      }
+
+      // ===== LEAF NODE =====
+      if (op_idx >= working_copy.length) {
+         if (makespan < best_makespan) {
+            best_makespan = makespan;
+            for (std::size_t i = 0; i < working_copy.length; ++i) {
+               best_sequence.ops[i] = working_copy.ops[i];
+            }
+            best_sequence.best_makespan_output = best_makespan;
+         }
+
+         // BACKTRACK
+         if (sp == 0)
+            break;
+
+         --sp;
+         Layer& prev = stack[sp];
+
+         const std::size_t old_op = prev.op_idx;
+         working_copy.ops[old_op].is_scheduled = false;
+         working_copy.ops[old_op].start_time = 0;
+
+         thread_loads = prev.thread_loads_full_array;
+         makespan = prev.makespan;
+         idling_time = prev.idletime;
+
+         stack[sp].thread_idx++;
+         continue;
+      }
+
+      stack[sp].op_idx = op_idx;
+
+      // ===== TRY THREADS =====
+      if (stack[sp].thread_idx >= usable_threads) {
+         stack[sp].thread_idx = 0;
+         stack[sp].op_idx = op_idx + 1;
+         continue;
+      }
+
+      const std::size_t t = stack[sp].thread_idx;
+
+      // Schedule op
+      working_copy.ops[op_idx].is_scheduled = true;
+      const std::size_t est = std::max(
+           thread_loads[t], earliest_start(working_copy, op_idx));
+
+      working_copy.ops[op_idx].start_time = est;
+      working_copy.ops[op_idx].thread = t;
+
+      const std::size_t old_load = thread_loads[t];
+      const std::size_t old_makespan = makespan;
+      const std::size_t old_idle = idling_time;
+
+      idling_time += (est - old_load);
+      thread_loads[t] = est + working_copy.ops[op_idx].fma;
+      makespan = std::max(makespan, thread_loads[t]);
+
+      // LOWER BOUND
+      const std::size_t lb = std::max(
+           ((idling_time + sequential_makespan) / usable_threads),
+           device_critical_path(working_copy));
+
+      if (std::max(lb, makespan) < best_makespan) {
+         // DESCEND (push frame)
+         Layer next {};
+         next.op_idx = 0;
+         next.thread_idx = 0;
+         next.depth = sp + 1;
+         next.makespan = makespan;
+         next.idletime = idling_time;
+         next.thread_loads_full_array = thread_loads;
+
+         stack[++sp] = next;
+         continue;
+      }
+
+      // REVERT THREAD TRY
+      working_copy.ops[op_idx].is_scheduled = false;
+      working_copy.ops[op_idx].start_time = 0;
+      thread_loads[t] = old_load;
+      makespan = old_makespan;
+      idling_time = old_idle;
+
+      stack[sp].thread_idx++;
+   }
+
+   return best_sequence;
+}
 
 auto BranchAndBoundSchedulerGPU::schedule_impl(
      Sequence& sequence, const std::size_t usable_threads,
@@ -787,7 +908,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    std::size_t sequential_makespan = sequence.sequential_makespan();
 
-   //Sequence working_copy = sequence;
+   // Sequence working_copy = sequence;
    std::size_t best_makespan = upper_bound;
 
    // Reset potential previous schedule
