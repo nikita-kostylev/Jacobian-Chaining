@@ -902,6 +902,8 @@ static DeviceSequence nonrecursive_schedule_op(
    return best_sequence;
 }
 
+#pragma omp end declare target
+
 auto BranchAndBoundSchedulerGPU::schedule_impl(
      Sequence& sequence, const std::size_t usable_threads,
      const std::size_t upper_bound) -> std::size_t {
@@ -967,6 +969,14 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled;
       }
+      std::println("after");
+      for (size_t i = 0; i < sequence.length(); i++) {
+         std::println(
+              "operation {} is_scheduled: {}", i,
+              result_sequence.ops[i].is_scheduled);
+      }
+
+      std::println("{}", result_sequence);
       return best_makespan;
    }
 }
