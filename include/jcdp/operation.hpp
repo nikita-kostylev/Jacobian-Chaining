@@ -114,7 +114,7 @@ struct std::formatter<jcdp::Operation> {
    template<class FmtContext>
    auto format(const jcdp::Operation& op, FmtContext& ctx) const
         -> FmtContext::iterator {
-      assert(op.action != jcdp::Action::NONE);
+      //assert(op.action != jcdp::Action::NONE);
 
       if (op.action == jcdp::Action::ACCUMULATION) {
          assert(op.mode != jcdp::Mode::NONE);

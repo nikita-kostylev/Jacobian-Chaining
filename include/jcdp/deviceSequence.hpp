@@ -16,8 +16,8 @@ constexpr int MAX_SEQUENCE_LENGTH = 40;  // FIXED FOR LIMITED TESTING. SHOULD BE
 
 struct DeviceSequence {
    Operation ops[MAX_SEQUENCE_LENGTH];
-   std::size_t length;
-   std::size_t best_makespan_output;
+   std::size_t length {0};
+   std::size_t best_makespan_output {0};
 };
 
 /* ========================= DEVICE FUNCTIONS ======================= */
@@ -31,12 +31,10 @@ inline DeviceSequence device_make_max() {
    DeviceSequence seq {};
    seq.length = 1;
 
-   Operation& op = seq.ops[0];
+   Operation op = Operation {
+        .fma = std::numeric_limits<std::size_t>::max(), .is_scheduled = true};
 
-   op.fma = static_cast<std::size_t>(-1);  // SIZE_MAX without <limits>
-   op.start_time = 0;
-   op.thread = 0;
-   op.is_scheduled = true;
+   seq.ops[0] = op;
 
    return seq;
 }

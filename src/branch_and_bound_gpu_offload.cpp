@@ -82,7 +82,8 @@ static DeviceSequence nonrecursive_schedule_op(
    initial_layer.next_op_idx = 0;
    initial_layer.thread_idx = 0;
    initial_layer.depth = depth;
-   initial_layer.start_time_op = working_copy.ops[0].start_time;
+   // initial_layer.start_time_op = working_copy.ops[0].start_time;
+   initial_layer.start_time_op = 0;
    initial_layer.makespan = makespan;
    initial_layer.idletime = idling_time;
    initial_layer.thread_loads_full_array = thread_loads;
@@ -142,9 +143,10 @@ static DeviceSequence nonrecursive_schedule_op(
          if (makespan < best_makespan) {
             best_makespan = makespan;
             for (size_t i = 0; i < working_copy.length; ++i) {
-               sequence.ops[i].thread = working_copy.ops[i].thread;
-               sequence.ops[i].start_time = working_copy.ops[i].start_time;
-               sequence.ops[i].is_scheduled = true;
+               // sequence.ops[i].thread = working_copy.ops[i].thread;
+               // sequence.ops[i].start_time = working_copy.ops[i].start_time;
+               //  sequence.ops[i].is_scheduled = true;
+               sequence.ops[i] = working_copy.ops[i];
             }
             sequence.best_makespan_output = best_makespan;
          }
@@ -460,6 +462,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    // Reset potential previous schedule
    for (Operation& op : sequence) {
       op.is_scheduled = false;
+      op.start_time = 0;
    }
 
    /* std::println("before");
@@ -518,7 +521,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled =
               result_sequence.ops[i].is_scheduled;  // it is not supposed to be
-                                                    // here
+                                                    // True
       }
 
       std::println("after");
