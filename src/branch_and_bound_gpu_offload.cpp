@@ -20,8 +20,8 @@ struct Layer {
    size_t next_op_idx = 0;
    size_t thread_idx = 0;
    size_t depth = 0;
-   time_t start_time_op = 0;
-   time_t idletime = 0;
+   size_t start_time_op = 0;
+   size_t idletime = 0;
    size_t makespan = 0;
 
    std::array<std::size_t, 20> thread_loads_full_array {};  // Value has to be
