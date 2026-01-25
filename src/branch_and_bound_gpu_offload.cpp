@@ -252,10 +252,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled;
       }
-      // std::println("Usable threads for following sequence: {}",
-      // usable_threads);
-      // std::println("{}", result_sequence);
-      /* if (all_scheduled(result_sequence)) {
+      std::println("Usable threads for following sequence: {}", usable_threads);
+      std::println("{}", result_sequence);
+      if (all_scheduled(result_sequence)) {
          // std::println("All operations scheduled");
       } else {
          for (size_t i = 0; i < sequence.length(); i++) {
@@ -263,7 +262,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
                  "operation {} is_scheduled: {}", i,
                  result_sequence.ops[i].is_scheduled);
          }
-      } */
+      }
 
       return best_makespan;
    }
