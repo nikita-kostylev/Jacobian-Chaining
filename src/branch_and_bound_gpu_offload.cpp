@@ -805,10 +805,9 @@ static DeviceSequence nonrecursive_schedule_op(
    stack[0].depth = 0;
    stack[0].thread_loads_full_array = thread_loads;
 
-   std::size_t count = 0;
+   // std::size_t count = 0;
 
-   while (count < 50000) {
-      count++;
+   while (true) {
 
       // ===== FIND NEXT UNSCHEDULED SCHEDULABLE OP =====
       std::size_t op_idx = stack[sp].op_idx;
@@ -820,7 +819,6 @@ static DeviceSequence nonrecursive_schedule_op(
 
       // ===== LEAF NODE =====
       if (op_idx >= working_copy.length) {
-         // THIS IS THE MISSING SEMANTIC CHECK
          if (all_scheduled(working_copy)) {
             if (makespan < best_makespan) {
                best_makespan = makespan;
@@ -928,11 +926,10 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.start_time = 0;
    }
 
-   std::println("{}", sequence);
-
    const std::size_t lower_bound = sequence.critical_path();
 
    if (lower_bound >= upper_bound) {
+      std::println("lower bound for it was {}", lower_bound);
       return lower_bound;
    }
 
@@ -982,15 +979,17 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled;
       }
-      std::println("after");
-      for (size_t i = 0; i < sequence.length(); i++) {
-         std::println(
-              "operation {} is_scheduled: {}", i,
-              result_sequence.ops[i].is_scheduled);
-      }
-
+      std::println("Usable threads for following sequence: {}", usable_threads);
       std::println("{}", result_sequence);
-      std::println("{}", usable_threads);
+      if (all_scheduled(result_sequence)) {
+         std::println("All operations scheduled");
+      } else {
+         for (size_t i = 0; i < sequence.length(); i++) {
+            std::println(
+                 "operation {} is_scheduled: {}", i,
+                 result_sequence.ops[i].is_scheduled);
+         }
+      }
 
       return best_makespan;
    }
