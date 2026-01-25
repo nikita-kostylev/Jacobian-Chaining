@@ -566,7 +566,7 @@ struct Layer {
    time_t idletime = 0;
    size_t makespan = 0;
 
-   std::array<std::size_t, 50> thread_loads_full_array {};  // Value has to be
+   std::array<std::size_t, 4> thread_loads_full_array {};  // Value has to be
                                                             // fixed for GPU.
                                                             // Selected smaller
                                                             // value, to reduce
@@ -787,13 +787,13 @@ static DeviceSequence nonrecursive_schedule_op(
 static DeviceSequence nonrecursive_schedule_op(
      std::size_t& best_makespan, DeviceSequence& working_copy,
      const std::size_t usable_threads, const std::size_t sequential_makespan) {
-   std::array<std::size_t, 50> thread_loads {};
+   std::array<std::size_t, 4> thread_loads {};
    thread_loads.fill(0);
 
    std::size_t makespan = 0;
    std::size_t idling_time = 0;
 
-   Layer stack[400];
+   Layer stack[16];
    std::size_t sp = 0;  // stack pointer = recursion depth
 
    DeviceSequence best_sequence = working_copy;
@@ -913,7 +913,7 @@ static DeviceSequence nonrecursive_schedule_op(
          next.idletime = idling_time;
          next.thread_loads_full_array = thread_loads;
 
-         assert(sp + 1 < 400 && "DFS stack overflow — infinite loop detected");
+         assert(sp + 1 < 17 && "DFS stack overflow — infinite loop detected");
          stack[++sp] = next;
          continue;
       }
@@ -952,7 +952,7 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    const std::size_t lower_bound = sequence.critical_path();
 
    if (lower_bound >= upper_bound) {
-      std::println("lower bound for it was {}", lower_bound);
+      // std::println("lower bound for it was {}", lower_bound);
       return lower_bound;
    }
 
@@ -1002,17 +1002,18 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled;
       }
-      std::println("Usable threads for following sequence: {}", usable_threads);
+      // std::println("Usable threads for following sequence: {}",
+      // usable_threads);
       std::println("{}", result_sequence);
-      if (all_scheduled(result_sequence)) {
-         std::println("All operations scheduled");
+      /* if (all_scheduled(result_sequence)) {
+         // std::println("All operations scheduled");
       } else {
          for (size_t i = 0; i < sequence.length(); i++) {
             std::println(
                  "operation {} is_scheduled: {}", i,
                  result_sequence.ops[i].is_scheduled);
          }
-      }
+      } */
 
       return best_makespan;
    }

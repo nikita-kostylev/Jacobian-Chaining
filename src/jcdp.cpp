@@ -161,7 +161,6 @@ int main(int argc, char* argv[]) {
    // Solve via branch & bound (GPU branch & bound scheduler)
    bnb_solver.init(chain, bnb_s_g_p);
    bnb_solver.set_makespan(SIZE_MAX);
-   std::println("{}", SIZE_MAX);
    auto start_bnb_gpu = std::chrono::high_resolution_clock::now();
    jcdp::Sequence bnb_seq_gpu = bnb_solver.solve();
    auto end_bnb_gpu = std::chrono::high_resolution_clock::now();
