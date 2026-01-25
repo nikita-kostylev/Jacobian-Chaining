@@ -26,11 +26,10 @@
 #include "jcdp/jacobian_chain.hpp"
 #include "jcdp/operation.hpp"
 #include "jcdp/optimizer/optimizer.hpp"
-#include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/scheduler/branch_and_bound.hpp"
+#include "jcdp/scheduler/scheduler.hpp"
 #include "jcdp/sequence.hpp"
 #include "jcdp/util/timer.hpp"
-
 #include "omp.h"
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>> HEADER CONTENTS <<<<<<<<<<<<<<<<<<<<<<<<<<<< //
@@ -49,9 +48,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
    virtual ~BranchAndBoundOptimizer() = default;
 
-   auto init(
-        const JacobianChain& chain,
-        scheduler::Scheduler* sched) -> void {
+   auto init(const JacobianChain& chain, scheduler::Scheduler* sched) -> void {
       Optimizer::init(chain);
 
       m_scheduler = sched;
@@ -72,9 +69,9 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       start_timer();
       std::size_t accs = m_matrix_free ? 0 : (m_length - 1);
 
-      #pragma omp parallel default(shared)
-      #pragma omp single
-      #pragma omp taskgroup
+#pragma omp parallel default(shared)
+#pragma omp single
+#pragma omp taskgroup
       while (++accs <= m_length) {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
@@ -86,6 +83,10 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
    inline auto set_upper_bound(const std::size_t upper_bound) {
       m_upper_bound = upper_bound;
+   }
+
+   inline auto set_makespan(const std::size_t makespan) {
+      m_makespan = makespan;
    }
 
    inline auto print_stats() -> void {
@@ -139,8 +140,8 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          JacobianChain task_chain = chain;
          std::vector<OpPair> task_eliminations = eliminations;
 
-         #pragma omp task default(none) firstprivate(task_sequence)            \
-                          firstprivate(task_chain, task_eliminations)
+#pragma omp task default(none) firstprivate(task_sequence)                     \
+     firstprivate(task_chain, task_eliminations)
          add_elimination(task_sequence, task_chain, task_eliminations);
       }
    }
@@ -168,8 +169,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
          Sequence final_sequence = sequence;
          scheduler::Scheduler* scheduler = m_scheduler;
 
-         #pragma omp task default(shared) \
-                          firstprivate(final_sequence, scheduler)
+#pragma omp task default(shared) firstprivate(final_sequence, scheduler)
          {
             const double time_to_schedule = remaining_time();
             if (time_to_schedule) {
@@ -180,10 +180,10 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
                m_timer_expired |= !scheduler->finished_in_time();
 
-               #pragma omp atomic
+#pragma omp atomic
                m_leafs++;
 
-               #pragma omp critical
+#pragma omp critical
                if (m_makespan > new_makespan) {
                   m_optimal_sequence = final_sequence;
                   m_makespan = new_makespan;
@@ -199,7 +199,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
       if (lower_bound >= m_makespan || lower_bound > m_upper_bound) {
          std::size_t& prune_counter = m_pruned_branches[sequence.length()];
 
-         #pragma omp atomic
+#pragma omp atomic
          prune_counter++;
 
          return;
