@@ -145,7 +145,9 @@ int main(int argc, char* argv[]) {
 
       // Solve via branch & bound
       bnb_solver.init(chain, bnb_s_p);
-      bnb_solver.set_upper_bound(dp_seq.makespan());
+      // bnb_solver.set_upper_bound(dp_seq.makespan());
+      bnb_solver.set_makespan(SIZE_MAX);
+
       auto start_bnb = std::chrono::high_resolution_clock::now();
       jcdp::Sequence bnb_seq = bnb_solver.solve();
       auto end_bnb = std::chrono::high_resolution_clock::now();
