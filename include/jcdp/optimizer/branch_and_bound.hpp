@@ -184,6 +184,9 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
 #pragma omp critical
                if (m_makespan > new_makespan) {
+                  std::println("Updated m_makespan var: {}", m_makespan);
+                  std::println(
+                       "Updated makespan() fun: {}", bnb_seq_gpu.makespan());
                   m_optimal_sequence = final_sequence;
                   m_makespan = new_makespan;
                   m_updated_makespan++;
