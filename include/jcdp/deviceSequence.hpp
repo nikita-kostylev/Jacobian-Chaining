@@ -9,7 +9,7 @@ namespace jcdp {
 
 /* ========================= CONFIGURATION ========================= */
 
-constexpr int MAX_SEQUENCE_LENGTH = 10;  // FIXED FOR LIMITED TESTING. SHOULD BE
+constexpr int MAX_SEQUENCE_LENGTH = 16;  // FIXED FOR LIMITED TESTING. SHOULD BE
                                          // ADJUSTABLE
 
 /* ========================= DEVICE SEQUENCE ======================== */
@@ -167,6 +167,7 @@ inline std::size_t device_critical_path(const DeviceSequence& seq) {
 
    return max_cp;
 }
+
 // #pragma omp end declare target
 
 }  // namespace jcdp

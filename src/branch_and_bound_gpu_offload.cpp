@@ -808,6 +808,12 @@ static DeviceSequence nonrecursive_schedule_op(
    // std::size_t count = 0;
 
    while (true) {
+      std::size_t scheduled = 0;
+      for (std::size_t i = 0; i < working_copy.length; ++i)
+         if (working_copy.ops[i].is_scheduled)
+            scheduled++;
+
+      assert(scheduled == sp && "DFS depth != number of scheduled ops");
 
       // ===== FIND NEXT UNSCHEDULED SCHEDULABLE OP =====
       std::size_t op_idx = stack[sp].op_idx;
@@ -853,14 +859,30 @@ static DeviceSequence nonrecursive_schedule_op(
 
       // ===== TRY THREADS =====
       if (stack[sp].thread_idx >= usable_threads) {
-         stack[sp].thread_idx = 0;
-         stack[sp].op_idx = op_idx + 1;
+         if (sp == 0)
+            break;
+
+         --sp;
+         Layer& prev = stack[sp];
+
+         const std::size_t old_op = prev.op_idx;
+         working_copy.ops[old_op].is_scheduled = false;
+         working_copy.ops[old_op].start_time = 0;
+
+         thread_loads = prev.thread_loads_full_array;
+         makespan = prev.makespan;
+         idling_time = prev.idletime;
+
+         stack[sp].thread_idx++;
          continue;
       }
 
       const std::size_t t = stack[sp].thread_idx;
 
       // Schedule op
+      assert(!working_copy.ops[op_idx].is_scheduled);
+      assert(is_schedulable(working_copy, op_idx));
+
       working_copy.ops[op_idx].is_scheduled = true;
       const std::size_t est = std::max(
            thread_loads[t], earliest_start(working_copy, op_idx));
@@ -891,6 +913,7 @@ static DeviceSequence nonrecursive_schedule_op(
          next.idletime = idling_time;
          next.thread_loads_full_array = thread_loads;
 
+         assert(sp + 1 < 400 && "DFS stack overflow — infinite loop detected");
          stack[++sp] = next;
          continue;
       }
