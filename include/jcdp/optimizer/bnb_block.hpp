@@ -254,13 +254,14 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
          // const double time_to_schedule = remaining_time();
+         Sequence final_sequence = seqs[i]
 
-#pragma omp task default(shared) firstprivate(seqs[i], scheduler)
+#pragma omp task default(shared) firstprivate(final_sequence, scheduler)
          {
             // scheduler->set_timer(time_to_schedule);
 
             const std::size_t new_makespan = scheduler->schedule(
-                 seqs[i], m_usable_threads, m_makespan);
+                 final_sequence, m_usable_threads, m_makespan);
 
             // m_timer_expired |= !scheduler->finished_in_time();
 
@@ -271,7 +272,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
 #pragma omp critical
             // This would be better done outside the for loop all at once
             if (m_makespan > new_makespan) {
-               m_optimal_sequence = seqs[i];
+               m_optimal_sequence = final_sequence;
                m_makespan = new_makespan;
                m_updated_makespan++;
             }
