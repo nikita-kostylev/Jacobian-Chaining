@@ -918,11 +918,11 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    std::size_t sequential_makespan = sequence.sequential_makespan();
 
-   // Sequence working_copy = sequence;
+   Sequence working_copy = sequence;
    std::size_t best_makespan = upper_bound;
 
    // Reset potential previous schedule
-   for (Operation& op : sequence) {
+   for (Operation& op : working_copy) {
       op.is_scheduled = false;
       op.thread = 0;
       op.start_time = 0;
@@ -950,10 +950,10 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
    DeviceSequence result_sequence;
    DeviceSequence device_working_copy;
 
-   for (std::size_t i = 0; i < sequence.length(); ++i) {
-      device_working_copy.ops[i] = sequence[i];
+   for (std::size_t i = 0; i < working_copy.length(); ++i) {
+      device_working_copy.ops[i] = working_copy[i];
    }
-   device_working_copy.length = sequence.length();
+   device_working_copy.length = working_copy.length();
 
    // run code on GPU
    bool notrangpu = false;
