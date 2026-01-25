@@ -88,7 +88,7 @@ endforeach()
 #  1) when compiling the TU that contains the target regions
 #  2) when linking the final executable (so clang runs the offload wrapper)
 set_source_files_properties(${JCDP_OFFLOAD_TU} PROPERTIES
-  COMPILE_OPTIONS "${OMP_OFFLOAD_FLAGS};-O3;-fno-rtti"
+  COMPILE_OPTIONS "${OMP_OFFLOAD_FLAGS};-O3;-fno-exceptions;-fno-rtti"
 )
 
 target_link_options(jcdp PRIVATE ${OMP_OFFLOAD_FLAGS})
