@@ -22,7 +22,7 @@ struct Layer {
    time_t start_time_op = 0;
    time_t idletime = 0;
    size_t makespan = 0;
-   std::array<std::size_t, 4> thread_loads_full_array {};
+   std::array<std::size_t, 6> thread_loads_full_array {};
 };
 
 inline bool all_scheduled(const DeviceSequence& seq) {
@@ -38,7 +38,7 @@ inline bool all_scheduled(const DeviceSequence& seq) {
 static DeviceSequence nonrecursive_schedule_op(
      std::size_t& best_makespan, DeviceSequence& working_copy,
      const std::size_t usable_threads, const std::size_t sequential_makespan) {
-   std::array<std::size_t, 4> thread_loads {};
+   std::array<std::size_t, 6> thread_loads {};
    thread_loads.fill(0);
 
    std::size_t makespan = 0;
