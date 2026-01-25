@@ -805,7 +805,10 @@ static DeviceSequence nonrecursive_schedule_op(
    stack[0].depth = 0;
    stack[0].thread_loads_full_array = thread_loads;
 
-   while (true) {
+   std::size_t count = 0;
+
+   while (count < 1000) {
+      count++;
 
       // ===== FIND NEXT UNSCHEDULED SCHEDULABLE OP =====
       std::size_t op_idx = stack[sp].op_idx;
@@ -925,9 +928,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.start_time = 0;
    }
 
-   if (usable_threads == 4) {
+   /* if (usable_threads == 4) {
       std::println("{}", sequence);
-   }
+   } */
 
    const std::size_t lower_bound = sequence.critical_path();
 
@@ -991,9 +994,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
             std::println("{}", result_sequence);
             std::println("{}", usable_threads);
        */
-      if (usable_threads == 4) {
+      /* if (usable_threads == 4) {
          std::println("{}", result_sequence);
-      }
+      } */
 
       return best_makespan;
    }

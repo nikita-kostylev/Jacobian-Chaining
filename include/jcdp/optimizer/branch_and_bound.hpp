@@ -74,6 +74,7 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
 
       #pragma omp parallel default(shared)
       #pragma omp single
+      #pragma omp taskgroup
       while (++accs <= m_length) {
          Sequence sequence {};
          std::vector<OpPair> eliminations {};
