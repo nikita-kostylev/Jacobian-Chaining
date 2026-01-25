@@ -260,15 +260,15 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
             // scheduler->set_timer(time_to_schedule);
 
             const std::size_t new_makespan = scheduler->schedule(
-                 seqs[i], m_usable_threads, m_makespan);
+                 seqs[i], m_usable_threads);
 
             // m_timer_expired |= !scheduler->finished_in_time();
 
-            #pragma omp atomic
-               m_leafs++;
+#pragma omp atomic
+            m_leafs++;
 
-            // No critical with gpu
-            #pragma omp critical
+// No critical with gpu
+#pragma omp critical
             // This would be better done outside the for loop all at once
             if (m_makespan > new_makespan) {
                m_optimal_sequence = seqs[i];
