@@ -925,8 +925,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
       op.start_time = 0;
    }
 
-   std::println("{}", sequence);
-   std::println("usable threads: {}", usable_threads);
+   if (usable_threads == 4) {
+      std::println("{}", sequence);
+   }
 
    const std::size_t lower_bound = sequence.critical_path();
 
@@ -969,8 +970,9 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
 
    // Return gpu output with catch if gpu offload failed
    if (!notrangpu) {
-      std::println("{}", sequence);
-      std::println("{}", usable_threads);
+      /*       std::println("{}", sequence);
+            std::println("{}", usable_threads);
+       */
       return 0;
    } else {
       best_makespan = result_sequence.best_makespan_output;
@@ -979,15 +981,20 @@ auto BranchAndBoundSchedulerGPU::schedule_impl(
          sequence[i].start_time = result_sequence.ops[i].start_time;
          sequence[i].is_scheduled = result_sequence.ops[i].is_scheduled;
       }
-      std::println("after");
-      for (size_t i = 0; i < sequence.length(); i++) {
-         std::println(
-              "operation {} is_scheduled: {}", i,
-              result_sequence.ops[i].is_scheduled);
+      /*       std::println("after");
+            for (size_t i = 0; i < sequence.length(); i++) {
+               std::println(
+                    "operation {} is_scheduled: {}", i,
+                    result_sequence.ops[i].is_scheduled);
+            }
+
+            std::println("{}", result_sequence);
+            std::println("{}", usable_threads);
+       */
+      if (usable_threads == 4) {
+         std::println("{}", result_sequence);
       }
 
-      std::println("{}", result_sequence);
-      std::println("{}", usable_threads);
       return best_makespan;
    }
 }
