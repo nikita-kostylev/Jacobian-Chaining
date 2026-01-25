@@ -254,7 +254,7 @@ class BnBBlockOptimizer : public Optimizer, public util::Timer {
       for (std::size_t i = 0; i < n; i++) {
          // Problem with clock on gpu
          // const double time_to_schedule = remaining_time();
-         Sequence final_sequence = seqs[i]
+         Sequence final_sequence = seqs[i];
 
 #pragma omp task default(shared) firstprivate(final_sequence, scheduler)
          {
