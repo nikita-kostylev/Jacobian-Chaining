@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
    if (true) {
       // Schedule dynamic programming sequence via GPU branch & bound scheduling
       auto start_sched = std::chrono::high_resolution_clock::now();
-      bnb_s_g_p->set_timer(30.0);
+      bnb_s_g_p->set_timer(1200);
       bnb_s_g_p->start_timer();
       bnb_s_g_p->schedule(dp_seq, dp_solver.m_usable_threads);
       auto end_sched = std::chrono::high_resolution_clock::now();
