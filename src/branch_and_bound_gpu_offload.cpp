@@ -807,7 +807,7 @@ static DeviceSequence nonrecursive_schedule_op(
 
    std::size_t count = 0;
 
-   while (count < 1000) {
+   while (count < 10000) {
       count++;
 
       // ===== FIND NEXT UNSCHEDULED SCHEDULABLE OP =====
