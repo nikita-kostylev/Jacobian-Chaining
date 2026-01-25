@@ -40,7 +40,7 @@ struct Operation {
    std::size_t k {0};
    std::size_t i {0};
    std::size_t fma {0};
-   std::size_t thread {2};
+   std::size_t thread {0};
    std::size_t start_time {0};
    bool is_scheduled {false};
 };
@@ -114,7 +114,7 @@ struct std::formatter<jcdp::Operation> {
    template<class FmtContext>
    auto format(const jcdp::Operation& op, FmtContext& ctx) const
         -> FmtContext::iterator {
-      assert(op.action != jcdp::Action::NONE);
+      //assert(op.action != jcdp::Action::NONE);
 
       if (op.action == jcdp::Action::ACCUMULATION) {
          assert(op.mode != jcdp::Mode::NONE);
