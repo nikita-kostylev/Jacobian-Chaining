@@ -81,11 +81,11 @@ class BranchAndBoundOptimizer : public Optimizer, public util::Timer {
    }
 
    inline auto set_upper_bound(const std::size_t upper_bound) {
-      this.m_upper_bound = upper_bound;
+      m_upper_bound = upper_bound;
    }
 
    inline auto set_makespan(const std::size_t makespan) {
-      this.m_makespan = makespan;
+      m_makespan = makespan;
    }
 
    inline auto print_stats() -> void {
